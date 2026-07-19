@@ -1,0 +1,7 @@
+# Declares which folders are workspace packages.
+# pnpm links these together locally: when apps/web imports packages/core,
+# pnpm wires it up as a live link (no publishing needed).
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "services/*"
