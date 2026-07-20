@@ -88,6 +88,14 @@
 
 - Prefer modular components and avoid large files; split when a component starts handling multiple responsibilities or becomes difficult to reason about
 
+## Dependencies & Versions
+
+- Prefer the **most recent _stable_ version** of a dependency — not the bleeding edge. Avoid pre-release, beta, or brand-new major versions that the surrounding ecosystem (linters, plugins, types) hasn't caught up to yet.
+
+- If a "latest" version breaks tooling or lacks ecosystem support, pin to the newest stable version that everything supports, and note why. (Example: TypeScript is pinned to 5.x because the ESLint/typescript-eslint toolchain does not yet support TypeScript 7.)
+
+- Keep a dependency's version consistent across all workspace packages.
+
 ## Consistency
 
 - Prefer existing project patterns over introducing new patterns

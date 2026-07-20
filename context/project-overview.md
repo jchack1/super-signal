@@ -4,7 +4,7 @@ Super Signal is an open-source, privacy-forward, community-first alternative to 
 
 Core values:
 
-- **Anonymity as a first-class principle** — no email or phone required, pseudonyms and throwaway identities are supported by design.
+- **Anonymity as a first-class principle** — no email or phone *required*; pseudonyms and throwaway identities are supported by design. Email/phone are supported as *optional* recovery/notification hooks on the hidden User (never on an Avatar); the default recovery mechanism is a user-held recovery phrase. See **Account recovery** under Identity below.
 - **Not government- or big-tech-controlled** — open-source and self-hostable so no single party owns the door.
 - **Calm over addictive** — works like Discord, feels like Signal.
 
@@ -19,7 +19,7 @@ Works like Discord (servers/rooms, communities, chat, voice, file sharing); feel
 # Core User Experience
 
 - **Filesystem-forward, not Discord-clone.** v1 deliberately exposes folders and paths (and eventually a basic command line: `cd`, `ls`, `mv`, `find`, `@user`, `#tag`) rather than hiding the tree behind a Discord-familiar-only shell. This is the differentiator; we lean into it.
-- **A navigable path/address bar** with breadcrumbs derived from the tree, so users always know "where" they are.
+- **A navigable path/address bar** with breadcrumbs derived from the tree, so users always know "where" they are. It doubles as the **navigation command line** (`cd` / `ls` / `find` / typing a path); **chat — with `@user` / `#tag` — lives in a separate message box**, so each input has one job. (The original spec folds `@`/`#` into the command line; in the GUI those belong with messaging, so we split them.)
 - **Chat and files as Nodes** in the same tree — a channel, a document, or a shared video are all Destinations you can `cd` into and be present in together.
 - **Contexts** (later): the same tree re-skinned for **Dev**, **Gaming** (2D/3D folder traversal with an avatar), **Creative**, and **Web** modes.
 
@@ -40,6 +40,12 @@ The spec defines an **Avatar** as *"a representation of a user and their place w
 - **User** — the account / login. Anonymous sign-in, credentials. This is the real identity boundary and nobody sees it directly.
 - **Avatar** — a **pseudonymous persona belonging to a User**; one User can have several. This is the face other people see (name, appearance). Separate Avatars of the same User are unlinkable, which is a core privacy feature (your organizing persona and your gaming persona can't be connected). An Avatar is a *sub-identity*, not a Node.
 - **Presence** — the live "where you are right now" pointer: which Node an Avatar is currently in, cursor position, "watching together." This is the *"place within the filesystem"* half of the spec's Avatar definition — modeled as ephemeral runtime state (via Realtime) that *points at* a Node, not as a stored Node itself.
+
+### Account recovery
+
+Recovery attaches to the **User** (the identity boundary), never to an Avatar, so it never de-anonymizes a public persona. The default is a user-held **recovery phrase** (crypto-wallet/seed style — no third party). **Email and phone are optional** opt-in add-ons for a familiar reset link and notifications; they are never required and are stored on the hidden User, so other users never see them. This keeps "no email or phone *required*" true while giving mainstream users a recovery safety net.
+
+Tradeoff on record: because email/phone are optional (unlike Signal, which *requires* a phone number and leans on it as its main Sybil/anti-bot gate), we don't get phone-number-style abuse resistance for free. Abuse / bot resistance for free anonymous accounts is therefore handled by *other* means (proof-of-work, invite trees, rate limits, per-community verification levels, moderation) — see the roadmap's open questions.
 
 ### The tree
 
@@ -152,6 +158,7 @@ The co-dev knows Domain-Driven Design; we adopt a **scaled-down** version to avo
 - **Calm and minimal — "feels like Signal."** Restrained palette, generous spacing, one clear typeface, low visual noise. The opposite of a busy, notification-maximizing interface.
 - **Filesystem made legible, not intimidating.** Paths, breadcrumbs, and tree navigation are visible and first-class, but presented cleanly — the power-user command line is available without being mandatory.
 - **Design system owned in-repo.** Because shadcn components live in `packages/ui`, the look is centrally defined via Tailwind design tokens and consistently applied across web and (later) desktop.
+- **v1 look — a single dark "phosphor" theme.** Warm charcoal chrome, a calm paper content surface, and one muted **phosphor-teal** accent (amber for `#tags`, blue for `@mentions`). We ship dark-only first, with the token system structured so light / other themes drop in later. Typography deliberately splits the two worlds: **monospace** for the system layer (paths, permissions, tree, commands) and a **calm sans** for human content (messages, docs) — the type split *is* "filesystem underneath, Signal on top." Vintage / 2000s-tech cues (beveled panels, a real address bar, a status bar) are kept low-contrast and spacious — nostalgia as structure, not clutter.
 
 # Project Structure
 
@@ -177,7 +184,7 @@ super-signal/
 
 # Success Criteria
 
-- A user can create an anonymous identity with **no email or phone**, and navigate.
+- A user can create an anonymous identity with **no email or phone required** — a recovery phrase is the default, with email/phone optional — and navigate.
 - The **filesystem model is visible and usable** — folders/paths/breadcrumbs — not hidden behind a Discord clone.
 - Core Discord-like flows work: join a community, browse channels, chat, share a file.
 - **Permissions inherit down the tree** correctly and are enforced at the data layer.

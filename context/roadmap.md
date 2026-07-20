@@ -4,7 +4,7 @@ Forward-looking build plan for Super Signal. Grounded in [project-overview.md](p
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · 🔒 blocked/waiting
 
-**Current focus:** Phase 0 — Foundation.
+**Current focus:** Phase 1 — Core filesystem UI. (Phase 0 complete.)
 
 ---
 
@@ -16,14 +16,13 @@ Get the monorepo, shared config, and the `packages/core` skeleton in place so ev
 - [x] Shared config at root — `tsconfig.base.json` + Prettier (ESLint deferred until there is code to lint; a dedicated `packages/config` deferred until it earns its place)
 - [x] `apps/web` scaffold — Vite + React + TypeScript
 - [x] Tailwind + shadcn/ui baseline in `packages/ui` (design tokens, `cn`, Button; shadcn CLI/`components.json` wiring deferred to first component add in Phase 1)
-- [ ] Wire TanStack Query, TanStack Router, Zustand
 - [x] `packages/core` skeleton — `domain/` `ports/` `adapters/` `services/`
 - [x] Domain types — `Node` (discriminated union), `Message`, `User`, `Avatar`, `Permission`, `AccessControlEntry`
 - [x] Repository interfaces (ports) — `NodeRepository`, `MessageRepository`, `UserRepository`
 - [x] Mock adapter + seed data (an example tree: a server, folders, a channel, messages)
 - [x] `PermissionService` — effective-permission resolution with inherit-break (covered by vitest tests)
-- [ ] Wire TanStack Query, TanStack Router, Zustand into `apps/web`
-- [ ] ESLint flat config at root (now that there is code to lint)
+- [x] Wire TanStack Query, TanStack Router, Zustand into `apps/web` (providers + composition root + one demo of each)
+- [x] ESLint flat config at root (TypeScript pinned to stable 5.x — TS 7 broke the ESLint toolchain)
 - [~] Deploy to Netlify — deferred until there is a UI (user's call)
 
 ## Phase 1 — Core filesystem UI (the "Part 1 = UI only" milestone)
@@ -42,7 +41,7 @@ The distinctive, demo-able product, built entirely against the mock data layer. 
 - [ ] Post a message — with optimistic update
 - [ ] Permission-aware UI — view/read/write gating driven by `PermissionService`
 - [ ] Identity — pick / switch Avatar (mock), simple presence indicator
-- [ ] Command line — basic `cd` / `ls` / `find` (the distinctive filesystem touch)
+- [ ] Command line — basic `cd` / `ls` / `find` in the address bar (chat + `@`/`#` stay in the message box)
 
 ## Phase 2 — Real backend (Supabase)
 
@@ -51,7 +50,7 @@ Swap the mock adapter for Supabase behind the repository interfaces. Ideally the
 - [ ] Supabase project + Postgres schema via SQL migrations (`nodes`, `messages`, `users`, `avatars`, `acl`)
 - [ ] RLS policies — enforce inherited permissions in the database (the real security boundary)
 - [ ] Supabase repository adapters — flip mock → Supabase
-- [ ] Anonymous auth (Supabase Auth) + Avatar management
+- [ ] Anonymous auth (Supabase Auth) + Avatar management — recovery phrase by default; optional email/phone attached to the User
 - [ ] Realtime chat — subscribe and merge into the TanStack Query cache
 - [ ] Storage — file uploads for file-type Nodes (metadata + object-storage pointer)
 - [ ] Edge Functions (Deno) — invites / webhooks as needed
@@ -78,4 +77,5 @@ Swap the mock adapter for Supabase behind the repository interfaces. Ideally the
 
 - ORM inside repositories — start with `supabase-js` directly vs. adopt Drizzle (deferred; lives behind the repository so it's swappable)
 - Anonymity scope — confirm with the team: "unlinkable to other users" vs. stronger "unlinkable to the host" (the latter is a much bigger architectural conversation)
+- Abuse / Sybil resistance for free anonymous accounts — since email/phone are *optional* (no mandatory phone-number gate like Signal), decide the mechanism(s): proof-of-work, invite trees, rate limits, per-community verification levels, moderation tooling. Decided so far: recovery phrase default + optional email/phone on the User (see [project-overview.md](project-overview.md) → Account recovery)
 - Which file-type Nodes matter first (Phase 3)
