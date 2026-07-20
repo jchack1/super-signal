@@ -17,12 +17,14 @@ Get the monorepo, shared config, and the `packages/core` skeleton in place so ev
 - [x] `apps/web` scaffold — Vite + React + TypeScript
 - [x] Tailwind + shadcn/ui baseline in `packages/ui` (design tokens, `cn`, Button; shadcn CLI/`components.json` wiring deferred to first component add in Phase 1)
 - [ ] Wire TanStack Query, TanStack Router, Zustand
-- [ ] `packages/core` skeleton — `domain/` `ports/` `adapters/` `services/`
-- [ ] Domain types — `Node` (discriminated union), `Message`, `User`, `Avatar`, `Permission`, `AccessControlEntry`
-- [ ] Repository interfaces (ports) — `NodeRepository`, `MessageRepository`, `UserRepository`
-- [ ] Mock adapter + seed data (an example tree: a server, folders, a channel, messages)
-- [ ] `PermissionService` — effective-permission resolution with inherit-break
-- [ ] Deploy the empty shell to Netlify (prove the pipeline end-to-end)
+- [x] `packages/core` skeleton — `domain/` `ports/` `adapters/` `services/`
+- [x] Domain types — `Node` (discriminated union), `Message`, `User`, `Avatar`, `Permission`, `AccessControlEntry`
+- [x] Repository interfaces (ports) — `NodeRepository`, `MessageRepository`, `UserRepository`
+- [x] Mock adapter + seed data (an example tree: a server, folders, a channel, messages)
+- [x] `PermissionService` — effective-permission resolution with inherit-break (covered by vitest tests)
+- [ ] Wire TanStack Query, TanStack Router, Zustand into `apps/web`
+- [ ] ESLint flat config at root (now that there is code to lint)
+- [~] Deploy to Netlify — deferred until there is a UI (user's call)
 
 ## Phase 1 — Core filesystem UI (the "Part 1 = UI only" milestone)
 
