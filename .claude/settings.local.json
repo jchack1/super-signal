@@ -4,7 +4,10 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__query-docs",
       "Skill(artifact-design)",
-      "Skill(artifact-design:*)"
+      "Skill(artifact-design:*)",
+      "PowerShell(pnpm run lint)",
+      "Skill(run)",
+      "Skill(run:*)"
     ]
   },
   "enabledMcpjsonServers": [

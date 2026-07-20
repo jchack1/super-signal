@@ -160,6 +160,31 @@ The co-dev knows Domain-Driven Design; we adopt a **scaled-down** version to avo
 - **Design system owned in-repo.** Because shadcn components live in `packages/ui`, the look is centrally defined via Tailwind design tokens and consistently applied across web and (later) desktop.
 - **v1 look — a single dark "phosphor" theme.** Warm charcoal chrome, a calm paper content surface, and one muted **phosphor-teal** accent (amber for `#tags`, blue for `@mentions`). We ship dark-only first, with the token system structured so light / other themes drop in later. Typography deliberately splits the two worlds: **monospace** for the system layer (paths, permissions, tree, commands) and a **calm sans** for human content (messages, docs) — the type split *is* "filesystem underneath, Signal on top." Vintage / 2000s-tech cues (beveled panels, a real address bar, a status bar) are kept low-contrast and spacious — nostalgia as structure, not clutter.
 
+### v1 design tokens (phosphor)
+
+The concrete values behind the direction above — the source of truth for `packages/ui/src/styles/globals.css`. They map onto the shadcn semantic token names so existing components keep working; a few custom tokens are added for the vintage chrome.
+
+| Token (semantic) | Value | Role |
+| --- | --- | --- |
+| `background` | `#101210` | app backdrop (deep warm black) |
+| `card` | `#171A15` | content surface ("paper") — chat, docs |
+| `secondary` / `muted` | `#1E211C` | panel chrome (sidebar, bars) |
+| `foreground` | `#CFE3D2` | primary text |
+| `muted-foreground` | `#7F927F` | secondary/system text |
+| `primary` | `#52BE9E` | phosphor-teal accent (the one bold note) |
+| `primary-foreground` | `#101210` | text/icons on teal |
+| `accent` | `#1B2E27` | teal selection/hover wash |
+| `border` / `input` | `#2B2F26` | hairlines |
+| `ring` | `#52BE9E` | focus ring |
+| `--bevel-hi` / `--bevel-lo` | `#2E332B` / `#090B08` | raised/inset panel bevel edges |
+| `--tag` | `#CE9450` | `#tags`, locks (warm amber) |
+| `--mention` | `#82ACD9` | `@mentions` (vintage web blue) |
+| `--font-sans` | `system-ui, …` | human content (messages, docs) |
+| `--font-mono` | `ui-monospace, …` | system layer (paths, perms, tree, commands) |
+
+- **Two boxes, two jobs** (interaction rule): the **address bar** is the navigation command line (`cd` / `ls` / `find` / paths); the **message box** is chat only (`@` / `#`). Each input means one thing. See Core User Experience above.
+- Fonts are system stacks for now (no bundled webfont); a bespoke face can be added later without changing token names.
+
 # Project Structure
 
 Monorepo (chosen so the whole stack lives in one place to work through together), using **pnpm workspaces + Turborepo**.
