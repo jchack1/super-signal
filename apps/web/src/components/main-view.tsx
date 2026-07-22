@@ -1,10 +1,12 @@
 import type { NodeId } from '@super-signal/core';
 import { useNode } from '../hooks/use-node';
 import { ChannelView } from './channel-view';
+import { FolderView } from './folder-view';
 import { NodePlaceholder } from './node-placeholder';
 
 // The center pane. Picks the right view for whatever Node is current: chat for a
-// chat channel, a placeholder for everything else (for now).
+// chat channel, a folder listing for a container (server/folder), a placeholder
+// for the kinds whose view isn't built yet (voice, document).
 export function MainView({ currentNodeId }: { currentNodeId: NodeId }) {
   const { data: node, isLoading } = useNode(currentNodeId);
 
@@ -28,9 +30,13 @@ export function MainView({ currentNodeId }: { currentNodeId: NodeId }) {
     );
   }
 
-  return node.type === 'chat-channel' ? (
-    <ChannelView channel={node} />
-  ) : (
-    <NodePlaceholder node={node} />
-  );
+  switch (node.type) {
+    case 'chat-channel':
+      return <ChannelView channel={node} />;
+    case 'server':
+    case 'folder':
+      return <FolderView node={node} />;
+    default:
+      return <NodePlaceholder node={node} />;
+  }
 }

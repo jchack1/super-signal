@@ -33,7 +33,7 @@ The distinctive, demo-able product, built entirely against the mock data layer. 
 - [x] Tree-navigation sidebar
 - [x] Path / address bar + breadcrumbs (derived from the tree) — now read-only orientation (typing moved to the one command line)
 - [x] Node routing — stable ID URLs (`/n/:nodeId`), path derived for display
-- [ ] Folder view — list children, ordered by `position` (in the center pane; today a folder shows a placeholder, and `ls` lists children in the command-line dropdown)
+- [x] Folder view — list children, ordered by `position` (center pane; click a row to `cd` in)
 - [~] Create / rename / move / delete a Node (against mock) — **move (`mv`) and copy (`cp`)** landed via the command line; create / rename / delete still to do
 - [ ] Drag-to-reorder (fractional `position`)
 - [ ] Context menus (right-click) via Radix/shadcn

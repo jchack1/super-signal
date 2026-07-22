@@ -39,3 +39,8 @@ The first real UI, built entirely on the mock data layer. Introduces the "phosph
 - **Tooling** — added a minimal **vitest** setup to `apps/web` (+ a root `test` turbo task). New tests: `tokenize`, `parse`, `resolve-path`, `execute` (32 tests, all passing). `stores/ui-store.ts` trimmed to an empty template (its `commandLineOpen` state is no longer needed — the prompt is always present).
 - **Deferred (flagged):** cross-channel/tag message routing (`#other-channel …` posts to the *current* channel only for now), permission-aware gating, tab-completion, copying messages on `cp`, and back/forward history on the breadcrumb arrows. Possible QoL later: "when in a channel, plain text = message" (today every message needs a `@`/`#` sigil).
 - Verified: `pnpm test`, `typecheck`, `lint`, and `build` all green.
+
+### 2026-07-21 — Phase 1 (slice 4): Folder view
+
+- **Center-pane folder listing (`components/folder-view.tsx`).** A container Node (server or folder) now shows its **contents** in the main pane — children ordered by `position`, each row a glyph + name + kind label; click a row to `cd` into it. Header shows the folder name and an item count; empty folders say so. `MainView` now routes by node type: `chat-channel` → chat, `server`/`folder` → `FolderView`, everything else → the placeholder (now just voice/document). Reuses the existing `useChildren` hook and `nodeGlyph`; no new data or logic. The deep seed (`projects` → `frontend`, `archive/old-general`) is now browsable in the main pane, not just the tree.
+- Verified: `typecheck`, `lint`, and `build` all green (no new tests — the view is presentational over the already-tested `useChildren`).
