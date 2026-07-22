@@ -1,11 +1,10 @@
 import type { ChatChannelNode } from '@super-signal/core';
-import { Panel } from '@super-signal/ui/components/panel';
 import { useMessages } from '../hooks/use-messages';
 import { MessageRow } from './message-row';
 
-// A chat channel: header (name + topic), the message history, and the composer.
-// Read-only for now — posting (with an optimistic update) is the next slice, so
-// the input is present but disabled to keep the layout honest.
+// A chat channel: header (name + topic) and the message history. Posting happens
+// through the app-wide command line (@ / # at the bottom prompt), so there's no
+// per-channel composer anymore.
 export function ChannelView({ channel }: { channel: ChatChannelNode }) {
   const { data: messages, isLoading } = useMessages(channel.id);
 
@@ -24,16 +23,6 @@ export function ChannelView({ channel }: { channel: ChatChannelNode }) {
         ) : (
           <p className="text-sm text-muted-foreground">No messages yet.</p>
         )}
-      </div>
-
-      <div className="border-t border-bevel-lo p-2.5">
-        <Panel variant="inset" className="flex items-center bg-card px-3 py-2 opacity-60">
-          <input
-            disabled
-            placeholder={`Message #${channel.name} — posting arrives in the next slice`}
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-          />
-        </Panel>
       </div>
     </section>
   );

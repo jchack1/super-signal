@@ -1,21 +1,34 @@
-import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router';
-import { HomePage } from './pages/home';
+import { createRootRoute, createRoute, createRouter, Outlet, redirect } from '@tanstack/react-router';
+import { NODE_GENERAL } from '@super-signal/core/adapters/mock';
+import { AppShell } from './components/app-shell';
 
-// The root route is the app-wide layout. `<Outlet />` is where the matched child
-// route renders. For now it's just a pass-through; later it holds the shell
-// (sidebar, breadcrumb bar, command line).
+// The root route is the app-wide layout. `<Outlet />` renders the matched child.
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
 
-// The home ("/") route. Phase 1 adds the real routes, e.g. `/n/$nodeId`.
+// "/" has no Node of its own, so it redirects to a default Node. `NODE_GENERAL`
+// is a mock seed id used only here at the app boundary; a real backend would send
+// the user to their last location or a home Node instead.
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: HomePage,
+  beforeLoad: () => {
+    throw redirect({ to: '/n/$nodeId', params: { nodeId: NODE_GENERAL } });
+  },
 });
 
-const routeTree = rootRoute.addChildren([indexRoute]);
+// The Node route. The URL identifies "where you are" by stable Node id (`/n/:id`);
+// the human-readable path is derived from the tree for display only. Renames and
+// moves never break these links because the id never changes. AppShell stays
+// mounted as the id changes, so tree state and scroll position persist.
+const nodeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/n/$nodeId',
+  component: AppShell,
+});
+
+const routeTree = rootRoute.addChildren([indexRoute, nodeRoute]);
 
 export const router = createRouter({ routeTree });
 

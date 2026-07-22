@@ -2,7 +2,7 @@ import type { NodeId } from '@super-signal/core';
 import { NODE_SERVER } from '@super-signal/core/adapters/mock';
 import { useNode } from '../hooks/use-node';
 import { useChildren } from '../hooks/use-children';
-import { useUiStore } from '../stores/ui-store';
+import { useNavigateToNode } from '../hooks/use-navigate-to-node';
 import { nodeGlyph } from '../lib/node-display';
 import { TreeNode } from './tree-node';
 
@@ -13,13 +13,13 @@ import { TreeNode } from './tree-node';
 export function TreeSidebar({ currentNodeId }: { currentNodeId: NodeId }) {
   const { data: root } = useNode(NODE_SERVER);
   const { data: children } = useChildren(NODE_SERVER);
-  const selectNode = useUiStore((state) => state.selectNode);
+  const navigateToNode = useNavigateToNode();
 
   return (
     <nav className="hidden flex-col gap-0.5 overflow-auto border-r border-bevel-lo bg-secondary p-2.5 md:flex">
       <button
         type="button"
-        onClick={() => root && selectNode(root.id)}
+        onClick={() => root && navigateToNode(root.id)}
         className="flex items-center gap-1.5 px-1 pb-2 text-left font-mono text-xs font-semibold text-foreground hover:text-primary"
       >
         <span aria-hidden="true">{root ? nodeGlyph(root.type) : ''}</span>

@@ -14,6 +14,8 @@
 
 - If confidence is low, say so
 
+- Avoid using too much jargon and keep communication/code comments human readable
+
 ## Scope & Changes
 
 - Solve the requested problem first

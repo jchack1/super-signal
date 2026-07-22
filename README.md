@@ -6,18 +6,18 @@ An open-source, privacy-forward, community-first alternative to Discord — **"f
 
 ## Tech stack
 
-| Area | Choice | Why (only where it isn't obvious) |
-|---|---|---|
-| Language | TypeScript | Shared domain types across the whole monorepo |
-| Frontend | Vite + React (SPA) | Simplest static deploy; easy to wrap in Electron later |
-| Styling | Tailwind v4 + shadcn/ui | Component source lives in our repo (`packages/ui`), so every style is editable |
-| Server state | TanStack Query | Caching/refetch, and it calls our data layer without knowing if it's mock or real |
-| Routing | TanStack Router | End-to-end type-safe params + search |
-| Client state | Zustand | Lightweight global UI state |
-| Monorepo | pnpm workspaces + Turborepo | Efficient linking + cached tasks |
-| Backend (planned) | Supabase | Postgres + Auth + Realtime + Storage in one self-hostable bundle; RLS enforces permissions |
+| Area              | Choice                      | Why                                                                                        |
+| ----------------- | --------------------------- | ------------------------------------------------------------------------------------------ |
+| Language          | TypeScript                  | Shared domain types across the whole monorepo                                              |
+| Frontend          | Vite + React (SPA)          | Simplest static deploy; easy to wrap in Electron later                                     |
+| Styling           | Tailwind v4 + shadcn/ui     | Component source lives in our repo (`packages/ui`), so every style is editable             |
+| Server state      | TanStack Query              | Caching/refetch, and it calls our data layer without knowing if it's mock or real          |
+| Routing           | TanStack Router             | End-to-end type-safe params + search                                                       |
+| Client state      | Zustand                     | Lightweight global UI state                                                                |
+| Monorepo          | pnpm workspaces + Turborepo | Efficient linking + cached tasks                                                           |
+| Backend (planned) | Supabase                    | Postgres + Auth + Realtime + Storage in one self-hostable bundle; RLS enforces permissions |
 
-The data layer uses **Ports & Adapters**: the app depends on repository *interfaces* in `packages/core`, so the current in-memory mock can be swapped for Supabase later without changing the UI.
+The data layer uses **Ports & Adapters**: the app depends on repository _interfaces_ in `packages/core`, so the current in-memory mock can be swapped for Supabase later without changing the UI.
 
 ## Structure
 
@@ -46,14 +46,14 @@ pnpm --filter @super-signal/web dev
 
 ### Useful scripts (from the repo root)
 
-| Command | What it does |
-|---|---|
-| `pnpm dev` | Run dev tasks across the workspace |
-| `pnpm build` | Build all packages |
-| `pnpm typecheck` | Type-check every package |
-| `pnpm lint` | Lint the whole repo |
-| `pnpm format` | Format with Prettier |
-| `pnpm --filter @super-signal/core test` | Run the core unit tests |
+| Command                                 | What it does                       |
+| --------------------------------------- | ---------------------------------- |
+| `pnpm dev`                              | Run dev tasks across the workspace |
+| `pnpm build`                            | Build all packages                 |
+| `pnpm typecheck`                        | Type-check every package           |
+| `pnpm lint`                             | Lint the whole repo                |
+| `pnpm format`                           | Format with Prettier               |
+| `pnpm --filter @super-signal/core test` | Run the core unit tests            |
 
 ## Documentation
 
@@ -67,5 +67,3 @@ Deeper context lives in [`context/`](context/): the [project overview](context/p
 - **First file-type Nodes** — which document/media types to support first.
 
 ---
-
-_Early and evolving — this README and the `context/` docs are updated as the project grows._

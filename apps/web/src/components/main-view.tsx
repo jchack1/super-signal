@@ -8,10 +8,22 @@ import { NodePlaceholder } from './node-placeholder';
 export function MainView({ currentNodeId }: { currentNodeId: NodeId }) {
   const { data: node, isLoading } = useNode(currentNodeId);
 
-  if (isLoading || !node) {
+  if (isLoading) {
     return (
       <section className="flex flex-1 items-center justify-center bg-card text-sm text-muted-foreground">
         Loading…
+      </section>
+    );
+  }
+
+  if (!node) {
+    return (
+      <section className="flex flex-1 flex-col items-center justify-center gap-1 bg-card p-8 text-center">
+        <div className="font-mono text-sm text-primary">Node not found</div>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Nothing lives at this address. It may have been moved or removed — pick a destination
+          from the tree.
+        </p>
       </section>
     );
   }

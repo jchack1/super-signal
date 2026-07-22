@@ -1,25 +1,10 @@
 import { create } from 'zustand';
-import type { NodeId } from '@super-signal/core';
 
-// Zustand holds global UI state that many far-apart components need to read or
-// change. Components subscribe to just the slice they use, so they only re-render
-// when that slice changes.
-//
-// `currentNodeId` is the "where am I" pointer that drives the address bar, the
-// main view, and the tree selection. It's null until the shell picks a default;
-// later this will be sourced from the URL (`/n/$nodeId`) instead.
-interface UiState {
-  currentNodeId: NodeId | null;
-  selectNode: (id: NodeId) => void;
+// Global, UI-only state that far-apart components need to share — Zustand gives
+// selective subscriptions with no provider re-renders. It's intentionally empty
+// right now: "where am I" lives in the URL (`useCurrentNodeId`), and the command
+// line keeps its own local input/results state. Kept as the wired-in template for
+// the first piece of genuinely shared UI state that lands (e.g. panel layout).
+export type UiState = Record<string, never>;
 
-  commandLineOpen: boolean;
-  setCommandLineOpen: (open: boolean) => void;
-}
-
-export const useUiStore = create<UiState>((set) => ({
-  currentNodeId: null,
-  selectNode: (id) => set({ currentNodeId: id }),
-
-  commandLineOpen: false,
-  setCommandLineOpen: (open) => set({ commandLineOpen: open }),
-}));
+export const useUiStore = create<UiState>(() => ({}));

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Node, NodeId } from '@super-signal/core';
 import { cn } from '@super-signal/ui/lib/utils';
 import { useChildren } from '../hooks/use-children';
-import { useUiStore } from '../stores/ui-store';
+import { useNavigateToNode } from '../hooks/use-navigate-to-node';
 import { isContainer, nodeGlyph } from '../lib/node-display';
 
 // One row in the tree, rendered recursively. Containers (server/folder) expand to
@@ -19,13 +19,13 @@ export function TreeNode({
 }) {
   const container = isContainer(node);
   const [expanded, setExpanded] = useState(false);
-  const selectNode = useUiStore((state) => state.selectNode);
+  const navigateToNode = useNavigateToNode();
   const { data: children } = useChildren(node.id, container && expanded);
 
   const selected = node.id === currentNodeId;
 
   const handleClick = () => {
-    selectNode(node.id);
+    navigateToNode(node.id);
     if (container) setExpanded((value) => !value);
   };
 

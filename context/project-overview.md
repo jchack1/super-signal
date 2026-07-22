@@ -4,22 +4,23 @@ Super Signal is an open-source, privacy-forward, community-first alternative to 
 
 Core values:
 
-- **Anonymity as a first-class principle** — no email or phone *required*; pseudonyms and throwaway identities are supported by design. Email/phone are supported as *optional* recovery/notification hooks on the hidden User (never on an Avatar); the default recovery mechanism is a user-held recovery phrase. See **Account recovery** under Identity below.
+- **Anonymity as a first-class principle** — no email or phone _required_; pseudonyms and throwaway identities are supported by design. Email/phone are supported as _optional_ recovery/notification hooks on the hidden User (never on an Avatar); the default recovery mechanism is a user-held recovery phrase. See **Account recovery** under Identity below.
 - **Not government- or big-tech-controlled** — open-source and self-hostable so no single party owns the door.
 - **Calm over addictive** — works like Discord, feels like Signal.
 
-Note: end-to-end encryption is *not* a requirement. Standard cloud providers are acceptable; the priority is anonymity and being ungatekeepable, not message secrecy from the host.
+Note: end-to-end encryption is _not_ a requirement. Standard cloud providers are acceptable; the priority is anonymity and being ungatekeepable, not message secrecy from the host.
 
 # Product Vision
 
 **"Filesystem underneath, Signal/Discord on top."**
 
-Works like Discord (servers/rooms, communities, chat, voice, file sharing); feels like Signal (calm, minimal, uncluttered). What makes it distinctive is the data model surfaced *as* the product: **everything is a Node in a filesystem tree** — folders, channels, files, servers, and users all share one identity and live in a navigable tree, with permissions inherited down the tree (Linux/ACL style). See [original-spec.md](original-spec.md) for the full object model and command-line vision.
+Works like Discord (servers/rooms, communities, chat, voice, file sharing); feels like Signal (calm, minimal, uncluttered). What makes it distinctive is the data model surfaced _as_ the product: **everything is a Node in a filesystem tree** — folders, channels, files, servers, and users all share one identity and live in a navigable tree, with permissions inherited down the tree (Linux/ACL style). See [original-spec.md](original-spec.md) for the full object model and command-line vision. If ideas conflict with the original spec, flag it for discussion.
 
 # Core User Experience
 
 - **Filesystem-forward, not Discord-clone.** v1 deliberately exposes folders and paths (and eventually a basic command line: `cd`, `ls`, `mv`, `find`, `@user`, `#tag`) rather than hiding the tree behind a Discord-familiar-only shell. This is the differentiator; we lean into it.
-- **A navigable path/address bar** with breadcrumbs derived from the tree, so users always know "where" they are. It doubles as the **navigation command line** (`cd` / `ls` / `find` / typing a path); **chat — with `@user` / `#tag` — lives in a separate message box**, so each input has one job. (The original spec folds `@`/`#` into the command line; in the GUI those belong with messaging, so we split them.)
+- **One command line, sigil-disambiguated** — faithful to the original spec's single prompt. A single input (the bottom command line) does everything: navigation/structure (`cd`, `ls`, `find`, `mv`, `cp`, typing a path) *and* chat (`@user` / `#tag`). The rule is a leading **sigil**: text starting with `@` or `#` is a **message**; everything else is a **command**. (We briefly split these into "two boxes, two jobs" — an address bar for nav and a separate message box for chat — but reverted to the spec's unified prompt; disambiguating by sigil is how IRC/Slack/Discord have always done it, and it keeps "where do I type?" a non-question.)
+- **A navigable path/address bar** with breadcrumbs derived from the tree, so users always know "where" they are. It is **read-only orientation** — clicking a crumb is a shortcut for `cd`, but you don't type in it. All typing happens in the one command line below.
 - **Chat and files as Nodes** in the same tree — a channel, a document, or a shared video are all Destinations you can `cd` into and be present in together.
 - **Contexts** (later): the same tree re-skinned for **Dev**, **Gaming** (2D/3D folder traversal with an avatar), **Creative**, and **Web** modes.
 
@@ -29,23 +30,23 @@ This section explains our core abstraction and how it traces back to [original-s
 
 ### Nodes (our name for the spec's "first-class objects")
 
-The original spec lists a set of **"first-class objects"** — Folders, Chat/Voice Channels, the various File types, Servers, Hosts — and states that everything can be *"located within a folder, within a filesystem."* We call the shared identity behind all of those a **Node**.
+The original spec lists a set of **"first-class objects"** — Folders, Chat/Voice Channels, the various File types, Servers, Hosts — and states that everything can be _"located within a folder, within a filesystem."_ We call the shared identity behind all of those a **Node**.
 
-A Node is the common base: it has an id, a name, an owner, a place in the tree (its parent), and permissions. Each kind of object (folder, chat channel, document, …) is simply a **specific type of Node**. So "everything is a Node" is our way of saying *every first-class object shares one identity and lives in one tree.* ("Node" is our terminology; the spec calls them "first-class objects" — same idea.)
+A Node is the common base: it has an id, a name, an owner, a place in the tree (its parent), and permissions. Each kind of object (folder, chat channel, document, …) is simply a **specific type of Node**. So "everything is a Node" is our way of saying _every first-class object shares one identity and lives in one tree._ ("Node" is our terminology; the spec calls them "first-class objects" — same idea.)
 
 ### Identity — Users, Avatars, Presence
 
-The spec defines an **Avatar** as *"a representation of a user and their place within the file system"* — which bundles two separate ideas. We keep them distinct, and identity lives **outside** the content tree (only content is made of Nodes):
+The spec defines an **Avatar** as _"a representation of a user and their place within the file system"_ — which bundles two separate ideas. We keep them distinct, and identity lives **outside** the content tree (only content is made of Nodes):
 
 - **User** — the account / login. Anonymous sign-in, credentials. This is the real identity boundary and nobody sees it directly.
-- **Avatar** — a **pseudonymous persona belonging to a User**; one User can have several. This is the face other people see (name, appearance). Separate Avatars of the same User are unlinkable, which is a core privacy feature (your organizing persona and your gaming persona can't be connected). An Avatar is a *sub-identity*, not a Node.
-- **Presence** — the live "where you are right now" pointer: which Node an Avatar is currently in, cursor position, "watching together." This is the *"place within the filesystem"* half of the spec's Avatar definition — modeled as ephemeral runtime state (via Realtime) that *points at* a Node, not as a stored Node itself.
+- **Avatar** — a **pseudonymous persona belonging to a User**; one User can have several. This is the face other people see (name, appearance). Separate Avatars of the same User are unlinkable, which is a core privacy feature (your organizing persona and your gaming persona can't be connected). An Avatar is a _sub-identity_, not a Node.
+- **Presence** — the live "where you are right now" pointer: which Node an Avatar is currently in, cursor position, "watching together." This is the _"place within the filesystem"_ half of the spec's Avatar definition — modeled as ephemeral runtime state (via Realtime) that _points at_ a Node, not as a stored Node itself.
 
 ### Account recovery
 
-Recovery attaches to the **User** (the identity boundary), never to an Avatar, so it never de-anonymizes a public persona. The default is a user-held **recovery phrase** (crypto-wallet/seed style — no third party). **Email and phone are optional** opt-in add-ons for a familiar reset link and notifications; they are never required and are stored on the hidden User, so other users never see them. This keeps "no email or phone *required*" true while giving mainstream users a recovery safety net.
+Recovery attaches to the **User** (the identity boundary), never to an Avatar, so it never de-anonymizes a public persona. The default is a user-held **recovery phrase** (crypto-wallet/seed style — no third party). **Email and phone are optional** opt-in add-ons for a familiar reset link and notifications; they are never required and are stored on the hidden User, so other users never see them. This keeps "no email or phone _required_" true while giving mainstream users a recovery safety net.
 
-Tradeoff on record: because email/phone are optional (unlike Signal, which *requires* a phone number and leans on it as its main Sybil/anti-bot gate), we don't get phone-number-style abuse resistance for free. Abuse / bot resistance for free anonymous accounts is therefore handled by *other* means (proof-of-work, invite trees, rate limits, per-community verification levels, moderation) — see the roadmap's open questions.
+Tradeoff on record: because email/phone are optional (unlike Signal, which _requires_ a phone number and leans on it as its main Sybil/anti-bot gate), we don't get phone-number-style abuse resistance for free. Abuse / bot resistance for free anonymous accounts is therefore handled by _other_ means (proof-of-work, invite trees, rate limits, per-community verification levels, moderation) — see the roadmap's open questions.
 
 ### The tree
 
@@ -53,7 +54,7 @@ Because the spec says everything lives inside folders inside a filesystem, we re
 
 ### Permissions — "Linux-ACL-style," in plain terms
 
-The spec says folders and commands have *"user permissions"* but doesn't specify a model. We chose the most familiar filesystem-permission approach — the **Unix/Linux** one — as our starting point, then generalized it and swapped Linux's cryptic `read`/`write`/`execute` (`rwx`) for plain-language verbs:
+The spec says folders and commands have _"user permissions"_ but doesn't specify a model. We chose the most familiar filesystem-permission approach — the **Unix/Linux** one — as our starting point, then generalized it and swapped Linux's cryptic `read`/`write`/`execute` (`rwx`) for plain-language verbs:
 
 - **view** — you can see that it exists (it appears in the tree)
 - **read** — you can see its contents (open a document, read a channel's history)
@@ -64,53 +65,63 @@ Permissions are granted to a **user**, a **role** (e.g. "moderators"), or **ever
 
 ### Inheritance (our addition)
 
-Real Linux permissions don't inherit — each item stands alone. We *added* top-down inheritance because it fits a Discord-like world: set a server private once and everything inside it is private too. By default a Node **inherits its parents' permissions**. A Node can also **break inheritance** and define its own permissions from scratch — which is exactly how you get a **private channel inside a public server**: the channel breaks inheritance and lists only the roles allowed in, so the server's "everyone can read" grant no longer reaches it.
+Real Linux permissions don't inherit — each item stands alone. We _added_ top-down inheritance because it fits a Discord-like world: set a server private once and everything inside it is private too. By default a Node **inherits its parents' permissions**. A Node can also **break inheritance** and define its own permissions from scratch — which is exactly how you get a **private channel inside a public server**: the channel breaks inheritance and lists only the roles allowed in, so the server's "everyone can read" grant no longer reaches it.
 
 ### Messages and other high-volume streams
 
-Not everything belongs in the generic Node tree. **Chat messages** (and later feed / shorts items) are high-volume, append-heavy streams — potentially millions per channel — and don't each need a tree position or their own permissions. So they live in their **own table**, where each message belongs to a channel Node and **inherits that channel's permissions**. The Node tree stays the *structure* (folders, channels, documents); messages are a *stream attached to* a structural Node. This keeps the elegant Node model for what it is good at while keeping the hottest data path fast and purpose-built.
+Not everything belongs in the generic Node tree. **Chat messages** (and later feed / shorts items) are high-volume, append-heavy streams — potentially millions per channel — and don't each need a tree position or their own permissions. So they live in their **own table**, where each message belongs to a channel Node and **inherits that channel's permissions**. The Node tree stays the _structure_ (folders, channels, documents); messages are a _stream attached to_ a structural Node. This keeps the elegant Node model for what it is good at while keeping the hottest data path fast and purpose-built.
 
 # Technology Stack
 
 Each decision below records **the choice**, **why**, and **at scale** (what we'd do as user count grows). Language throughout is **TypeScript**, so types flow end-to-end across the monorepo.
 
 ### Frontend framework — Vite + React SPA
+
 - **Why:** No SSR is needed for a chat app; a static SPA is the simplest thing to deploy to Netlify and the easiest to later wrap in Electron. React keeps us in the JS/TS ecosystem the team knows.
-- **At scale:** A static SPA scales trivially on a CDN — user growth is served by the API/data tier, not the frontend. If SEO-facing public pages (community landing pages) ever matter, we add a small SSR/prerender layer for *those* routes only, without moving the app off the SPA.
+- **At scale:** A static SPA scales trivially on a CDN — user growth is served by the API/data tier, not the frontend. If SEO-facing public pages (community landing pages) ever matter, we add a small SSR/prerender layer for _those_ routes only, without moving the app off the SPA.
 
 ### Language — TypeScript everywhere
+
 - **Why:** One language across UI, shared logic, and services means domain types (Nodes, permissions) are defined once and reused everywhere, which is the main reason we chose a monorepo.
 - **At scale:** Shared types remain the safety net as the number of services grows; no change needed.
 
 ### Styling — Tailwind + shadcn/ui (Radix primitives)
-- **Why:** Tailwind is fast and the team already knows it; shadcn copies component *source* into our repo (in `packages/ui`) rather than installing a black-box library, so every pixel is editable and Radix gives us accessible menus/dialogs/tree interactions for free — ideal for a menu-heavy filesystem UI.
+
+- **Why:** Tailwind is fast and the team already knows it; shadcn copies component _source_ into our repo (in `packages/ui`) rather than installing a black-box library, so every pixel is editable and Radix gives us accessible menus/dialogs/tree interactions for free — ideal for a menu-heavy filesystem UI.
 - **At scale:** Purely build-time CSS with zero runtime cost, so it has no bearing on user scale; it stays as-is.
 
 ### Server state — TanStack Query
+
 - **Why:** Most of this app's state is remote (Nodes, channels, messages, members) — async, cached, backend-owned — and TanStack Query handles caching, revalidation, optimistic updates, and realtime merging so we don't hand-roll it. It also calls our `packages/core` interface without caring whether the data is mock or Supabase, which makes the eventual backend swap seamless.
 - **At scale:** Client-side caching reduces redundant reads per user; as traffic grows we tune cache/stale times and lean on Supabase Realtime to push updates instead of polling.
 
 ### Client state — Zustand (frequent) / Context (static) / useState (local)
+
 - **Why:** Global, frequently-changing UI state (current path, selection, command-palette, layout) belongs in Zustand, which has selective subscriptions and no provider re-render problems; Context is reserved for rarely-changing globals (theme, session), and `useState` for component-local state.
 - **At scale:** Client state is per-session and never a scaling bottleneck; no change needed.
 
 ### Routing — TanStack Router, with stable ID-based URLs
-- **Why:** TanStack Router gives fully type-safe params and schema-validated search params (valuable for storing filesystem view-state in the URL) and integrates with TanStack Query. URLs use **stable Node IDs** (`/n/:nodeId`, optional cosmetic slug) with the human-readable path *derived* from the tree — so renames, moves, and permission changes never break links, while still delivering the filesystem feel.
+
+- **Why:** TanStack Router gives fully type-safe params and schema-validated search params (valuable for storing filesystem view-state in the URL) and integrates with TanStack Query. URLs use **stable Node IDs** (`/n/:nodeId`, optional cosmetic slug) with the human-readable path _derived_ from the tree — so renames, moves, and permission changes never break links, while still delivering the filesystem feel.
 - **At scale:** Stable permalinks are exactly what you want as content and sharing grow; no change needed.
 
 ### Backend core (leaning) — Supabase
-- **Why:** Supabase gives Postgres + Auth (with anonymous sign-in, matching our anonymity value) + Realtime + Storage in one open-source, self-hostable, EU-region-capable package; Row-Level Security enforces our inherited tree permissions *in the database*, so the SPA can talk to it directly with little-to-no backend code at first. Postgres fits a relationship-dense tree/permissions/membership model, with `jsonb` absorbing the polymorphic per-Node-type payloads.
+
+- **Why:** Supabase gives Postgres + Auth (with anonymous sign-in, matching our anonymity value) + Realtime + Storage in one open-source, self-hostable, EU-region-capable package; Row-Level Security enforces our inherited tree permissions _in the database_, so the SPA can talk to it directly with little-to-no backend code at first. Postgres fits a relationship-dense tree/permissions/membership model, with `jsonb` absorbing the polymorphic per-Node-type payloads.
 - **At scale:** Postgres scales vertically and via read replicas a long way; hot paths (message feed, activity) can move to an additive NoSQL/edge store later, blobs already live in object storage, and because Supabase is open-source we can self-host or migrate the Postgres backbone if a managed tier becomes a cost/scale constraint. (AWS remains on the table given the team's familiarity.)
 
 ### Object storage — Supabase Storage or Cloudflare R2
+
 - **Why:** Large files and media never belong in the database; the DB stores metadata + a pointer, and the bytes live in object storage. R2 is attractive for zero egress fees on media.
 - **At scale:** Object storage is effectively infinitely scalable and CDN-frontable; media delivery cost/perf is managed at the storage/CDN layer independent of the app.
 
 ### Server-side logic — Deno Edge Functions + Postgres SQL functions
+
 - **Why:** Logic that can't live in RLS (invites, webhooks, bot/LLM calls, moderation hooks) runs as Supabase Edge Functions, which execute on Deno (secure-by-default, TypeScript-native, web-standard `fetch`); tree-walking permission logic lives in SQL functions/triggers close to the data.
 - **At scale:** Edge Functions scale automatically and run globally close to users; heavy or long-running jobs graduate to dedicated services rather than bloating edge functions.
 
 ### Known future services (not day 1)
+
 - **Voice/video:** a WebRTC SFU — **LiveKit** (self-hostable, written in Go; we run it, we don't write it).
 - **Real-time co-editing:** a CRDT layer — **Yjs** (JS-native, fits our stack).
 - **Search-at-scale, feed/algorithm, bots/LLM:** added as satellite services over time around the Supabase core.
@@ -120,7 +131,7 @@ Each decision below records **the choice**, **why**, and **at scale** (what we'd
 
 ### What "backend" means here — no Node.js server in the MVP
 
-Unlike a classic Node.js + Express + Sequelize setup (a server you write and run between the client and the database), **the MVP has no dedicated backend server.** The React SPA talks **directly to Supabase** via `supabase-js`, and security is enforced by **RLS (row-level security) inside Postgres** — RLS is the *real* authority, so any client-side permission check is convenience/UX only. The only server-side code we author early is **SQL** (functions, triggers, policies) and small **Deno Edge Functions** (webhooks, bot/LLM calls). A traditional **Node.js backend tier returns only if/when we extract one for scale** — at which point the client just gets a new "call the API" adapter (see below) and nothing above it changes.
+Unlike a classic Node.js + Express + Sequelize setup (a server you write and run between the client and the database), **the MVP has no dedicated backend server.** The React SPA talks **directly to Supabase** via `supabase-js`, and security is enforced by **RLS (row-level security) inside Postgres** — RLS is the _real_ authority, so any client-side permission check is convenience/UX only. The only server-side code we author early is **SQL** (functions, triggers, policies) and small **Deno Edge Functions** (webhooks, bot/LLM calls). A traditional **Node.js backend tier returns only if/when we extract one for scale** — at which point the client just gets a new "call the API" adapter (see below) and nothing above it changes.
 
 ### Supabase = the AWS-services bundle
 
@@ -131,7 +142,7 @@ Conceptually, Supabase fills the slot a team would otherwise assemble from many 
 We keep the provider swappable via one disciplined seam. A Sequelize "Model" secretly did three jobs; we split them:
 
 - **Domain type** (`interface Node {...}`) — what the app reasons about → `packages/core/domain`
-- **Repository** — *the database layer*; the only place the provider library (`supabase-js`, or later Drizzle/Prisma) appears; swap providers by swapping this → `packages/core/adapters`
+- **Repository** — _the database layer_; the only place the provider library (`supabase-js`, or later Drizzle/Prisma) appears; swap providers by swapping this → `packages/core/adapters`
 - **Service** — business logic/orchestration (e.g. `createMessage` = permission check + validate + write) → `packages/core/services`
 - Physical **schema** lives in SQL migrations (Postgres is the source of truth), not JS models.
 
@@ -147,7 +158,7 @@ packages/core/
 
 The co-dev knows Domain-Driven Design; we adopt a **scaled-down** version to avoid over-abstraction:
 
-- **Adopt:** ubiquitous language (code terms == domain terms), Entities/Value Objects (a way of *thinking* about types, not extra layers), Aggregates (design boundaries — e.g. `Node`+its ACL together, `Message` on its own referencing its channel by id), **Repositories** (the one non-negotiable swap seam), and Domain **Services** *only where logic exists*.
+- **Adopt:** ubiquitous language (code terms == domain terms), Entities/Value Objects (a way of _thinking_ about types, not extra layers), Aggregates (design boundaries — e.g. `Node`+its ACL together, `Message` on its own referencing its channel by id), **Repositories** (the one non-negotiable swap seam), and Domain **Services** _only where logic exists_.
 - **Defer:** Domain Events (`MessagePosted`, `NodeMoved`) until they earn their place.
 - **Skip:** event sourcing, CQRS, heavy factories, multiple bounded contexts on day one.
 
@@ -158,31 +169,31 @@ The co-dev knows Domain-Driven Design; we adopt a **scaled-down** version to avo
 - **Calm and minimal — "feels like Signal."** Restrained palette, generous spacing, one clear typeface, low visual noise. The opposite of a busy, notification-maximizing interface.
 - **Filesystem made legible, not intimidating.** Paths, breadcrumbs, and tree navigation are visible and first-class, but presented cleanly — the power-user command line is available without being mandatory.
 - **Design system owned in-repo.** Because shadcn components live in `packages/ui`, the look is centrally defined via Tailwind design tokens and consistently applied across web and (later) desktop.
-- **v1 look — a single dark "phosphor" theme.** Warm charcoal chrome, a calm paper content surface, and one muted **phosphor-teal** accent (amber for `#tags`, blue for `@mentions`). We ship dark-only first, with the token system structured so light / other themes drop in later. Typography deliberately splits the two worlds: **monospace** for the system layer (paths, permissions, tree, commands) and a **calm sans** for human content (messages, docs) — the type split *is* "filesystem underneath, Signal on top." Vintage / 2000s-tech cues (beveled panels, a real address bar, a status bar) are kept low-contrast and spacious — nostalgia as structure, not clutter.
+- **v1 look — a single dark "phosphor" theme.** Warm charcoal chrome, a calm paper content surface, and one muted **phosphor-teal** accent (amber for `#tags`, blue for `@mentions`). We ship dark-only first, with the token system structured so light / other themes drop in later. Typography deliberately splits the two worlds: **monospace** for the system layer (paths, permissions, tree, commands) and a **calm sans** for human content (messages, docs) — the type split _is_ "filesystem underneath, Signal on top." Vintage / 2000s-tech cues (beveled panels, a real address bar, a status bar) are kept low-contrast and spacious — nostalgia as structure, not clutter.
 
 ### v1 design tokens (phosphor)
 
 The concrete values behind the direction above — the source of truth for `packages/ui/src/styles/globals.css`. They map onto the shadcn semantic token names so existing components keep working; a few custom tokens are added for the vintage chrome.
 
-| Token (semantic) | Value | Role |
-| --- | --- | --- |
-| `background` | `#101210` | app backdrop (deep warm black) |
-| `card` | `#171A15` | content surface ("paper") — chat, docs |
-| `secondary` / `muted` | `#1E211C` | panel chrome (sidebar, bars) |
-| `foreground` | `#CFE3D2` | primary text |
-| `muted-foreground` | `#7F927F` | secondary/system text |
-| `primary` | `#52BE9E` | phosphor-teal accent (the one bold note) |
-| `primary-foreground` | `#101210` | text/icons on teal |
-| `accent` | `#1B2E27` | teal selection/hover wash |
-| `border` / `input` | `#2B2F26` | hairlines |
-| `ring` | `#52BE9E` | focus ring |
-| `--bevel-hi` / `--bevel-lo` | `#2E332B` / `#090B08` | raised/inset panel bevel edges |
-| `--tag` | `#CE9450` | `#tags`, locks (warm amber) |
-| `--mention` | `#82ACD9` | `@mentions` (vintage web blue) |
-| `--font-sans` | `system-ui, …` | human content (messages, docs) |
-| `--font-mono` | `ui-monospace, …` | system layer (paths, perms, tree, commands) |
+| Token (semantic)            | Value                 | Role                                        |
+| --------------------------- | --------------------- | ------------------------------------------- |
+| `background`                | `#101210`             | app backdrop (deep warm black)              |
+| `card`                      | `#171A15`             | content surface ("paper") — chat, docs      |
+| `secondary` / `muted`       | `#1E211C`             | panel chrome (sidebar, bars)                |
+| `foreground`                | `#CFE3D2`             | primary text                                |
+| `muted-foreground`          | `#7F927F`             | secondary/system text                       |
+| `primary`                   | `#52BE9E`             | phosphor-teal accent (the one bold note)    |
+| `primary-foreground`        | `#101210`             | text/icons on teal                          |
+| `accent`                    | `#1B2E27`             | teal selection/hover wash                   |
+| `border` / `input`          | `#2B2F26`             | hairlines                                   |
+| `ring`                      | `#52BE9E`             | focus ring                                  |
+| `--bevel-hi` / `--bevel-lo` | `#2E332B` / `#090B08` | raised/inset panel bevel edges              |
+| `--tag`                     | `#CE9450`             | `#tags`, locks (warm amber)                 |
+| `--mention`                 | `#82ACD9`             | `@mentions` (vintage web blue)              |
+| `--font-sans`               | `system-ui, …`        | human content (messages, docs)              |
+| `--font-mono`               | `ui-monospace, …`     | system layer (paths, perms, tree, commands) |
 
-- **Two boxes, two jobs** (interaction rule): the **address bar** is the navigation command line (`cd` / `ls` / `find` / paths); the **message box** is chat only (`@` / `#`). Each input means one thing. See Core User Experience above.
+- **One command line** (interaction rule): a single bottom prompt handles both commands (`cd` / `ls` / `find` / `mv` / `cp` / paths) and chat (`@` / `#`), disambiguated by the leading sigil. The top address bar is read-only breadcrumbs (click a crumb = `cd`). See Core User Experience above.
 - Fonts are system stacks for now (no bundled webfont); a bespoke face can be added later without changing token names.
 
 # Project Structure

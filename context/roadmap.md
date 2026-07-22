@@ -29,19 +29,19 @@ Get the monorepo, shared config, and the `packages/core` skeleton in place so ev
 
 The distinctive, demo-able product, built entirely against the mock data layer. Nothing here touches a real backend.
 
-- [ ] App shell / layout — calm, minimal, Signal-like
-- [ ] Tree-navigation sidebar
-- [ ] Path / address bar + breadcrumbs (derived from the tree)
-- [ ] Node routing — stable ID URLs (`/n/:nodeId`), path derived for display
-- [ ] Folder view — list children, ordered by `position`
-- [ ] Create / rename / move / delete a Node (against mock)
+- [x] App shell / layout — calm, minimal, Signal-like
+- [x] Tree-navigation sidebar
+- [x] Path / address bar + breadcrumbs (derived from the tree) — now read-only orientation (typing moved to the one command line)
+- [x] Node routing — stable ID URLs (`/n/:nodeId`), path derived for display
+- [ ] Folder view — list children, ordered by `position` (in the center pane; today a folder shows a placeholder, and `ls` lists children in the command-line dropdown)
+- [~] Create / rename / move / delete a Node (against mock) — **move (`mv`) and copy (`cp`)** landed via the command line; create / rename / delete still to do
 - [ ] Drag-to-reorder (fractional `position`)
 - [ ] Context menus (right-click) via Radix/shadcn
-- [ ] Chat channel view — read message history from mock
-- [ ] Post a message — with optimistic update
+- [x] Chat channel view — read message history from mock
+- [x] Post a message — with optimistic update
 - [ ] Permission-aware UI — view/read/write gating driven by `PermissionService`
 - [ ] Identity — pick / switch Avatar (mock), simple presence indicator
-- [ ] Command line — basic `cd` / `ls` / `find` in the address bar (chat + `@`/`#` stay in the message box)
+- [x] Command line — **one unified bottom prompt**, sigil-disambiguated: `cd` / `ls` / `find` / `mv` / `cp` commands + `@`/`#` messaging in the same input (reverted the earlier two-box split; see [feature-history.md](feature-history.md) 2026-07-21)
 
 ## Phase 2 — Real backend (Supabase)
 
@@ -79,3 +79,4 @@ Swap the mock adapter for Supabase behind the repository interfaces. Ideally the
 - Anonymity scope — confirm with the team: "unlinkable to other users" vs. stronger "unlinkable to the host" (the latter is a much bigger architectural conversation)
 - Abuse / Sybil resistance for free anonymous accounts — since email/phone are *optional* (no mandatory phone-number gate like Signal), decide the mechanism(s): proof-of-work, invite trees, rate limits, per-community verification levels, moderation tooling. Decided so far: recovery phrase default + optional email/phone on the User (see [project-overview.md](project-overview.md) → Account recovery)
 - Which file-type Nodes matter first (Phase 3)
+- Unified command line — reverted the "two boxes, two jobs" split to the spec's single sigil-disambiguated prompt (default = command; `@`/`#` = message). Open: whether to add a QoL "plain text = message when inside a channel" so routine chat doesn't need a sigil — being flagged with the spec author.

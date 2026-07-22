@@ -32,6 +32,10 @@ export const avatars: Avatar[] = [
 export const NODE_SERVER = asNodeId('node-server');
 export const NODE_GENERAL = asNodeId('node-general');
 export const NODE_MODS = asNodeId('node-mods');
+export const NODE_PROJECTS = asNodeId('node-projects');
+export const NODE_FRONTEND = asNodeId('node-frontend');
+export const NODE_ARCHIVE = asNodeId('node-archive');
+export const NODE_OLD_GENERAL = asNodeId('node-old-general');
 
 export const nodes: Node[] = [
   // The server. Everyone can see it and read inside it by default.
@@ -72,6 +76,56 @@ export const nodes: Node[] = [
     position: 'a2',
     inherit: false,
     acl: [{ principal: { kind: 'role', id: ROLE_MODERATORS }, allow: ['read', 'write'] }],
+    createdAt: T,
+    updatedAt: T,
+  },
+  // A nested folder — gives the tree depth so cd/ls/mv/cp have somewhere to go.
+  {
+    id: NODE_PROJECTS,
+    type: 'folder',
+    name: 'projects',
+    parentId: NODE_SERVER,
+    ownerId: USER_ALICE,
+    position: 'a3',
+    inherit: true,
+    acl: [],
+    createdAt: T,
+    updatedAt: T,
+  },
+  {
+    id: NODE_FRONTEND,
+    type: 'chat-channel',
+    name: 'frontend',
+    parentId: NODE_PROJECTS,
+    ownerId: USER_ALICE,
+    position: 'a0',
+    inherit: true,
+    acl: [{ principal: { kind: 'everyone' }, allow: ['write'] }],
+    createdAt: T,
+    updatedAt: T,
+  },
+  // A folder within a folder, plus a channel inside it — two levels deep.
+  {
+    id: NODE_ARCHIVE,
+    type: 'folder',
+    name: 'archive',
+    parentId: NODE_PROJECTS,
+    ownerId: USER_ALICE,
+    position: 'a1',
+    inherit: true,
+    acl: [],
+    createdAt: T,
+    updatedAt: T,
+  },
+  {
+    id: NODE_OLD_GENERAL,
+    type: 'chat-channel',
+    name: 'old-general',
+    parentId: NODE_ARCHIVE,
+    ownerId: USER_ALICE,
+    position: 'a0',
+    inherit: true,
+    acl: [{ principal: { kind: 'everyone' }, allow: ['write'] }],
     createdAt: T,
     updatedAt: T,
   },

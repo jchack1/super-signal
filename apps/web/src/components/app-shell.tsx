@@ -1,20 +1,18 @@
-import { NODE_GENERAL } from '@super-signal/core/adapters/mock';
 import { Panel } from '@super-signal/ui/components/panel';
-import { useUiStore } from '../stores/ui-store';
+import { useCurrentNodeId } from '../hooks/use-current-node-id';
 import { TitleBar } from './title-bar';
 import { AddressBar } from './address-bar';
 import { StatusBar } from './status-bar';
 import { TreeSidebar } from './tree-sidebar';
 import { MainView } from './main-view';
 import { MembersPanel } from './members-panel';
+import { CommandPrompt } from './command-prompt';
 
 // The whole app window: title bar and address bar on top, the three-pane body
-// (tree · content · members), and the status bar at the bottom. `NODE_GENERAL`
-// is the default landing Node until the user selects one (a mock seed id, used
-// only here at the app boundary).
+// (tree · content · members), and the status bar at the bottom. The current Node
+// comes from the URL (`/n/$nodeId`); this component stays mounted as it changes.
 export function AppShell() {
-  const storeCurrent = useUiStore((state) => state.currentNodeId);
-  const currentNodeId = storeCurrent ?? NODE_GENERAL;
+  const currentNodeId = useCurrentNodeId();
 
   return (
     <div className="flex h-screen flex-col bg-background p-3">
@@ -26,6 +24,7 @@ export function AppShell() {
           <MainView currentNodeId={currentNodeId} />
           <MembersPanel channelId={currentNodeId} />
         </div>
+        <CommandPrompt currentNodeId={currentNodeId} />
         <StatusBar currentNodeId={currentNodeId} />
       </Panel>
     </div>

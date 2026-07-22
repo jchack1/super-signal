@@ -81,6 +81,9 @@ importers:
       vite:
         specifier: ^8.1.5
         version: 8.1.5(jiti@2.7.0)
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(vite@8.1.5(jiti@2.7.0))
 
   packages/core:
     devDependencies:
