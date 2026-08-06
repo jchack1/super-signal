@@ -1,5 +1,26 @@
 import { tokenize } from './tokenize';
-import type { Command } from './types';
+import type { Command, CreatableNodeType } from './types';
+
+// User-facing keywords for `create <type> <name>`, mapped onto the domain's
+// NodeType. Several words point at the same type (`channel`/`chat`, `voice`/`vc`)
+// since there's no filename extension to infer a type from the way Linux's
+// `touch` does — the type has to be named explicitly, so we accept the words
+// people are likely to reach for.
+const CREATE_TYPE_ALIASES: Record<string, CreatableNodeType> = {
+  folder: 'folder',
+  dir: 'folder',
+  server: 'server',
+  channel: 'chat-channel',
+  chat: 'chat-channel',
+  'chat-channel': 'chat-channel',
+  voice: 'voice-channel',
+  vc: 'voice-channel',
+  'voice-channel': 'voice-channel',
+};
+const CREATE_TYPE_HINT = 'folder, server, channel, or voice';
+
+// Recursive-delete flags for `rm`, mirroring Linux's `-r`/`-R`/`--recursive`.
+const RECURSIVE_FLAGS = new Set(['-r', '-R', '--recursive']);
 
 // Turns a raw line into a typed Command. The one disambiguation rule: a leading
 // `@` or `#` makes it a message; everything else is a command. cd/ls/find take
@@ -46,6 +67,65 @@ export function parse(input: string): Command {
         return { kind: 'error', message: 'find: needs a search term, e.g. find general' };
       }
       return { kind: 'find', query: remainder };
+
+    case 'mkdir':
+      if (!remainder) return { kind: 'error', message: 'mkdir: needs a name, e.g. mkdir projects' };
+      return { kind: 'create', type: 'folder', name: remainder };
+
+    case 'create': {
+      const firstArgSpace = remainder.search(/\s/);
+      if (!remainder || firstArgSpace === -1) {
+        return {
+          kind: 'error',
+          message: `create: needs a type and a name, e.g. create channel general (types: ${CREATE_TYPE_HINT})`,
+        };
+      }
+      const typeWord = remainder.slice(0, firstArgSpace).toLowerCase();
+      const name = remainder.slice(firstArgSpace + 1).trim();
+      const type = CREATE_TYPE_ALIASES[typeWord];
+      if (!type) {
+        return {
+          kind: 'error',
+          message: `create: unknown type "${typeWord}" — try ${CREATE_TYPE_HINT}`,
+        };
+      }
+      if (!name) return { kind: 'error', message: 'create: needs a name, e.g. create channel general' };
+      return { kind: 'create', type, name };
+    }
+
+    case 'rm': {
+      if (!remainder) {
+        return {
+          kind: 'error',
+          message: 'rm: needs a path, e.g. rm projects/old or rm -r projects/old',
+        };
+      }
+      const firstArgSpace = remainder.search(/\s/);
+      const firstToken = firstArgSpace === -1 ? remainder : remainder.slice(0, firstArgSpace);
+      const recursive = RECURSIVE_FLAGS.has(firstToken);
+      const path = recursive
+        ? (firstArgSpace === -1 ? '' : remainder.slice(firstArgSpace + 1).trim())
+        : remainder;
+      if (!path) return { kind: 'error', message: 'rm: needs a path, e.g. rm -r projects/old' };
+      return { kind: 'rm', path, recursive, confirmed: false };
+    }
+
+    case 'rename': {
+      const [path, newName, extra] = tokenize(remainder);
+      if (path === undefined || newName === undefined) {
+        return {
+          kind: 'error',
+          message: 'rename: needs a path and a new name, e.g. rename projects/old new-name',
+        };
+      }
+      if (extra !== undefined) {
+        return {
+          kind: 'error',
+          message: 'rename: too many arguments — quote names that contain spaces',
+        };
+      }
+      return { kind: 'rename', path, newName };
+    }
 
     case 'mv':
     case 'cp': {

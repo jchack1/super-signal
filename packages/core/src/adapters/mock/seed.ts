@@ -80,6 +80,10 @@ export const nodes: Node[] = [
     updatedAt: T,
   },
   // A nested folder — gives the tree depth so cd/ls/mv/cp have somewhere to go.
+  // Bob is granted `manage` here (on top of the server's inherited view/read) so
+  // there's a node bob can actually `rm` — everything else in the seed is owned
+  // by alice with no manage grant for bob, which is realistic but would make the
+  // delete command untestable end-to-end without this.
   {
     id: NODE_PROJECTS,
     type: 'folder',
@@ -88,7 +92,7 @@ export const nodes: Node[] = [
     ownerId: USER_ALICE,
     position: 'a3',
     inherit: true,
-    acl: [],
+    acl: [{ principal: { kind: 'user', id: USER_BOB }, allow: ['manage'] }],
     createdAt: T,
     updatedAt: T,
   },

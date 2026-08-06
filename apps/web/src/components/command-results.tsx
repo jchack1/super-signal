@@ -17,11 +17,12 @@ export function CommandResults({
   selectedIndex: number;
   onSelect: (index: number) => void;
 }) {
-  // Status-only results (no navigable rows).
-  if (result.kind === 'info' || result.kind === 'error') {
+  // Status-only results (no navigable rows). `confirm` reads as a warning
+  // (same amber as `error`) since it's asking about something destructive.
+  if (result.kind === 'info' || result.kind === 'error' || result.kind === 'confirm') {
     return (
       <Panel className="absolute inset-x-0 bottom-full mb-1 bg-secondary px-3 py-2 font-mono text-xs">
-        <span className={result.kind === 'error' ? 'text-tag' : 'text-muted-foreground'}>
+        <span className={result.kind === 'info' ? 'text-muted-foreground' : 'text-tag'}>
           {result.message}
         </span>
       </Panel>

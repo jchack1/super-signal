@@ -34,14 +34,14 @@ The distinctive, demo-able product, built entirely against the mock data layer. 
 - [x] Path / address bar + breadcrumbs (derived from the tree) — now read-only orientation (typing moved to the one command line)
 - [x] Node routing — stable ID URLs (`/n/:nodeId`), path derived for display
 - [x] Folder view — list children, ordered by `position` (center pane; click a row to `cd` in)
-- [~] Create / rename / move / delete a Node (against mock) — **move (`mv`) and copy (`cp`)** landed via the command line; create / rename / delete still to do
+- [x] Create / rename / move / delete a Node (against mock) — **create (`create`/`mkdir`), rename (`rename`, and `mv` now doubles as rename per Linux convention), move (`mv`), copy (`cp`), and delete (`rm`, with confirmation)** all landed via the command line
 - [ ] Drag-to-reorder (fractional `position`)
 - [ ] Context menus (right-click) via Radix/shadcn
 - [x] Chat channel view — read message history from mock
 - [x] Post a message — with optimistic update
-- [ ] Permission-aware UI — view/read/write gating driven by `PermissionService`
+- [~] Permission-aware UI — view/read/write gating driven by `PermissionService`; `rm` is the first command wired to a real check (`manage`, see [feature-history.md](feature-history.md) 2026-08-05 slice 7) — `mv`/`cp`/`create` still perform no permission check at all, see Open questions
 - [ ] Identity — pick / switch Avatar (mock), simple presence indicator
-- [x] Command line — **one unified bottom prompt**, sigil-disambiguated: `cd` / `ls` / `find` / `mv` / `cp` commands + `@`/`#` messaging in the same input (reverted the earlier two-box split; see [feature-history.md](feature-history.md) 2026-07-21)
+- [x] Command line — **one unified bottom prompt**, sigil-disambiguated: `cd` / `ls` / `find` / `mv` / `cp` / `create` / `mkdir` / `rename` / `rm` commands + `@`/`#` messaging in the same input, plus live command suggestions while typing (reverted the earlier two-box split; see [feature-history.md](feature-history.md) 2026-07-21). This closes out the basic command set the original spec implies.
 
 ## Phase 2 — Real backend (Supabase)
 
@@ -80,3 +80,6 @@ Swap the mock adapter for Supabase behind the repository interfaces. Ideally the
 - Abuse / Sybil resistance for free anonymous accounts — since email/phone are *optional* (no mandatory phone-number gate like Signal), decide the mechanism(s): proof-of-work, invite trees, rate limits, per-community verification levels, moderation tooling. Decided so far: recovery phrase default + optional email/phone on the User (see [project-overview.md](project-overview.md) → Account recovery)
 - Which file-type Nodes matter first (Phase 3)
 - Unified command line — reverted the "two boxes, two jobs" split to the spec's single sigil-disambiguated prompt (default = command; `@`/`#` = message). Open: whether to add a QoL "plain text = message when inside a channel" so routine chat doesn't need a sigil — being flagged with the spec author.
+- Permission checks are not yet applied consistently across mutating commands. `rm` checks `manage` on its target (see [feature-history.md](feature-history.md) 2026-08-05 slice 7); `mv`, `cp`, `create`, and `rename` perform no permission check at all — anyone can currently move, copy, create, or rename anywhere. Needs a deliberate pass once the permission-aware-UI item in Phase 1 is picked up, rather than bolting a check onto each command ad hoc.
+- Recursive delete (`rm -r`) only checks `manage` on the top-level target, not on each node it deletes underneath. A node deeper in the subtree that breaks inheritance and excludes the actor could still be swept away by a recursive delete of an ancestor the actor can manage. Worth deciding whether operations that touch multiple nodes (recursive delete, and eventually recursive permission edits) should require the *intersection* of permissions across every node they touch, not just the top-level target.
+- No undo / trash window for `rm` — a confirmed delete is immediate and permanent. Decide whether a trash/soft-delete period is worth adding before this reaches real users, or whether the confirmation step is considered sufficient.
