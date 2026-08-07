@@ -1,5 +1,4 @@
-import { asNodeId, type Node, type NodeId } from '@super-signal/core';
-import { CURRENT_USER_ID } from '../session';
+import { asNodeId, type Node, type NodeId, type UserId } from '@super-signal/core';
 import { isContainer } from '../node-display';
 import { appendPosition } from '../tree-position';
 import { resolvePath } from './resolve-path';
@@ -15,12 +14,18 @@ import type {
 // Builds a fresh Node of the given (creatable) type. A switch over the literal
 // tag — rather than one object with a cast — keeps each branch checked against
 // its own member of the Node union.
-function buildNode(type: CreatableNodeType, name: string, parentId: NodeId, position: string): Node {
+function buildNode(
+  type: CreatableNodeType,
+  name: string,
+  parentId: NodeId,
+  position: string,
+  ownerId: UserId,
+): Node {
   const base = {
     id: asNodeId(crypto.randomUUID()),
     name,
     parentId,
-    ownerId: CURRENT_USER_ID,
+    ownerId,
     position,
     inherit: true,
     acl: [],
@@ -283,7 +288,7 @@ export async function executeCommand(
         return error(`create: can't create things inside ${current.name} — cd into a folder or server first`);
       }
       const position = appendPosition(await repo.getChildren(current.id));
-      const node = buildNode(command.type, command.name, current.id, position);
+      const node = buildNode(command.type, command.name, current.id, position, actor.userId);
       await repo.create(node);
       return {
         kind: 'info',

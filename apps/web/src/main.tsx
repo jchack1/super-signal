@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { queryClient } from './lib/query-client';
 import { router } from './router';
+import { SessionProvider } from './contexts/session-provider';
 import '@super-signal/ui/globals.css';
 
 // getElementById is typed as `HTMLElement | null` under our strict config,
@@ -15,11 +16,15 @@ if (!rootElement) {
 
 // Providers wrap the whole app:
 // - QueryClientProvider gives every component access to the shared data cache.
+// - SessionProvider gives every component "who you are right now" (see
+//   contexts/session-context.ts for why this is Context, not Zustand).
 // - RouterProvider renders whichever route matches the URL.
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <SessionProvider>
+        <RouterProvider router={router} />
+      </SessionProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

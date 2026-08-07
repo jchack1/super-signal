@@ -1,18 +1,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { asMessageId, type Message, type NodeId } from '@super-signal/core';
 import { dataLayer } from '../lib/data-layer';
-import { CURRENT_AVATAR_ID } from '../lib/session';
+import { useSession } from './use-session';
 
 // Posts a message to a channel with an optimistic update: the message appears
 // instantly in the cached list, then reconciles once the write resolves (or rolls
 // back on error). Same pattern will hold when the repository is Supabase.
 export function useSendMessage(channelId: NodeId) {
   const queryClient = useQueryClient();
+  const { avatarId } = useSession();
   const queryKey = ['messages', channelId] as const;
 
   return useMutation({
     mutationFn: (body: string) =>
-      dataLayer.messages.create({ channelId, authorAvatarId: CURRENT_AVATAR_ID, body }),
+      dataLayer.messages.create({ channelId, authorAvatarId: avatarId, body }),
 
     onMutate: async (body: string) => {
       // Stop in-flight refetches so they don't clobber our optimistic entry.
@@ -22,7 +23,7 @@ export function useSendMessage(channelId: NodeId) {
       const optimistic: Message = {
         id: asMessageId(`optimistic-${crypto.randomUUID()}`),
         channelId,
-        authorAvatarId: CURRENT_AVATAR_ID,
+        authorAvatarId: avatarId,
         body,
         createdAt: new Date().toISOString(),
       };

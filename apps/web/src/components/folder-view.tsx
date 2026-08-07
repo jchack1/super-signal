@@ -26,20 +26,25 @@ export function FolderView({ node }: { node: FolderNode | ServerNode }) {
   // Computes a new position for the dragged node from its drop target's current
   // neighbors (excluding the dragged node itself, so dropping it right back
   // next to where it started still resolves against its real neighbors) and
-  // hands it to the reorder mutation.
+  // hands it to the reorder mutation. The `finally` matters: `positionBetween`
+  // can throw (e.g. if two siblings somehow share a position), and without it
+  // a throw would skip clearing drag state, leaving the row stuck dimmed.
   const handleDrop = (target: Node) => {
-    if (draggedId && children && draggedId !== target.id) {
-      const others = children.filter((child) => child.id !== draggedId);
-      const index = others.findIndex((child) => child.id === target.id);
-      const edge = dropTarget?.edge ?? 'before';
-      if (index !== -1) {
-        const before = edge === 'before' ? others[index - 1]?.position : others[index]?.position;
-        const after = edge === 'before' ? others[index]?.position : others[index + 1]?.position;
-        reorder({ nodeId: draggedId, position: positionBetween(before, after) });
+    try {
+      if (draggedId && children && draggedId !== target.id) {
+        const others = children.filter((child) => child.id !== draggedId);
+        const index = others.findIndex((child) => child.id === target.id);
+        const edge = dropTarget?.edge ?? 'before';
+        if (index !== -1) {
+          const before = edge === 'before' ? others[index - 1]?.position : others[index]?.position;
+          const after = edge === 'before' ? others[index]?.position : others[index + 1]?.position;
+          reorder({ nodeId: draggedId, position: positionBetween(before, after) });
+        }
       }
+    } finally {
+      setDraggedId(null);
+      setDropTarget(null);
     }
-    setDraggedId(null);
-    setDropTarget(null);
   };
 
   return (
@@ -63,7 +68,13 @@ export function FolderView({ node }: { node: FolderNode | ServerNode }) {
             <div
               key={child.id}
               draggable
-              onDragStart={() => setDraggedId(child.id)}
+              onDragStart={(event) => {
+                // Firefox requires data on the drag event to start a native
+                // HTML5 drag at all; the value itself is never read back
+                // (the drop target is tracked in React state instead).
+                event.dataTransfer.setData('text/plain', child.id);
+                setDraggedId(child.id);
+              }}
               onDragOver={(event) => {
                 event.preventDefault();
                 const rect = event.currentTarget.getBoundingClientRect();

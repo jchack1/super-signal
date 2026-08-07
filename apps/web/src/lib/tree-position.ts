@@ -38,6 +38,17 @@ export function positionBetween(before: string | undefined, after: string | unde
     throw new Error(`positionBetween: "${before}" does not sort before "${after}"`);
   }
 
+  // `0` is the alphabet's minimum digit, so when there's no lower bound at all
+  // (`before` is `undefined`) and `after` is nothing but `0`s, the digit walk
+  // below would keep "matching" zeros until `after` runs out, then treat the
+  // rest as unbounded and append trailing digits — producing a result that's
+  // *longer* than `after` with the same leading zeros, which sorts after it,
+  // not before. The empty string is the one value guaranteed to sort before
+  // anything, so it's the correct answer in this one edge case.
+  if (before === undefined && after !== undefined && /^0*$/.test(after)) {
+    return '';
+  }
+
   let result = '';
   let i = 0;
   while (true) {

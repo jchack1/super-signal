@@ -4,7 +4,7 @@ import { Avatar } from '@super-signal/ui/components/avatar';
 import { cn } from '@super-signal/ui/lib/utils';
 import { useAvatar } from '../hooks/use-avatar';
 import { formatTime } from '../lib/format';
-import { CURRENT_AVATAR_ID } from '../lib/session';
+import { useSession } from '../hooks/use-session';
 
 // Highlight @mentions (blue) and #tags (amber) inline, matching the design tokens.
 // Splitting on whitespace keeps the separators so spacing is preserved.
@@ -31,10 +31,11 @@ function renderBody(body: string): ReactNode[] {
 export function MessageRow({ message }: { message: Message }) {
   const { data: avatar } = useAvatar(message.authorAvatarId);
   const name = avatar?.displayName ?? '…';
+  const { avatarId } = useSession();
   // Channels stay a uniform left-aligned list (they scale past two people); your
   // own messages just get a subtle tint + a "you" tag. Right/left bubbles are
   // reserved for 1:1 DMs.
-  const isMine = message.authorAvatarId === CURRENT_AVATAR_ID;
+  const isMine = message.authorAvatarId === avatarId;
 
   return (
     <div className={cn('-mx-2 flex gap-3 rounded-sm px-2 py-1.5', isMine && 'bg-primary/5')}>

@@ -22,9 +22,12 @@ export const users: User[] = [
 ];
 
 // --- Avatars (each user's public face) ---
+// Bob gets two avatars — separate, unlinkable personas for the same User — so
+// avatar switching has something real to demo. Alice and Carol keep one each.
 export const avatars: Avatar[] = [
   { id: asAvatarId('avatar-alice'), userId: USER_ALICE, displayName: 'alice', createdAt: T },
   { id: asAvatarId('avatar-bob'), userId: USER_BOB, displayName: 'bob', createdAt: T },
+  { id: asAvatarId('avatar-wanderer'), userId: USER_BOB, displayName: 'wanderer', createdAt: T },
   { id: asAvatarId('avatar-carol'), userId: USER_CAROL, displayName: 'carol', createdAt: T },
 ];
 

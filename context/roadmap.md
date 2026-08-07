@@ -40,7 +40,7 @@ The distinctive, demo-able product, built entirely against the mock data layer. 
 - [x] Chat channel view — read message history from mock
 - [x] Post a message — with optimistic update
 - [~] Permission-aware UI — view/read/write gating driven by `PermissionService`; `rm` is the first command wired to a real check (`manage`, see [feature-history.md](feature-history.md) 2026-08-05 slice 7) — `mv`/`cp`/`create` still perform no permission check at all, see Open questions
-- [ ] Identity — pick / switch Avatar (mock), simple presence indicator
+- [x] Identity — pick / switch Avatar (mock), simple presence indicator
 - [x] Command line — **one unified bottom prompt**, sigil-disambiguated: `cd` / `ls` / `find` / `mv` / `cp` / `create` / `mkdir` / `rename` / `rm` commands + `@`/`#` messaging in the same input, plus live command suggestions while typing (reverted the earlier two-box split; see [feature-history.md](feature-history.md) 2026-07-21). This closes out the basic command set the original spec implies.
 
 ## Phase 2 — Real backend (Supabase)

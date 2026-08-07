@@ -43,4 +43,18 @@ describe('positionBetween', () => {
     expect(() => positionBetween('a1', 'a0')).toThrow();
     expect(() => positionBetween('a0', 'a0')).toThrow();
   });
+
+  it('sorts before an all-zero `after` with no lower bound (regression)', () => {
+    // `0` is the alphabet minimum, so there's no digit below it — this used to
+    // return something like '0i', which sorts *after* '0', not before it.
+    for (const after of ['0', '00', '000']) {
+      const between = positionBetween(undefined, after);
+      expect(between.localeCompare(after)).toBeLessThan(0);
+    }
+  });
+
+  it('still finds room before an `after` that has a non-zero digit', () => {
+    const between = positionBetween(undefined, '001');
+    expect(between.localeCompare('001')).toBeLessThan(0);
+  });
 });

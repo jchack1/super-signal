@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeId } from '@super-signal/core';
 import { dataLayer } from '../lib/data-layer';
-import { CURRENT_ACTOR } from '../lib/session';
+import { useSession } from './use-session';
 import { parse } from '../lib/command-line/parse';
 import { executeCommand } from '../lib/command-line/execute';
 import type { Command, CommandResult } from '../lib/command-line/types';
@@ -23,6 +23,7 @@ export function useCommandLine(
   const queryClient = useQueryClient();
   const navigateToNode = useNavigateToNode();
   const { mutate: sendMessage } = useSendMessage(currentNodeId);
+  const { actor } = useSession();
 
   return useCallback(
     async (input: string | Command): Promise<CommandResult> => {
@@ -31,7 +32,7 @@ export function useCommandLine(
         repo: dataLayer.nodes,
         currentNodeId,
         permissions: dataLayer.permissions,
-        actor: CURRENT_ACTOR,
+        actor,
       });
 
       switch (result.kind) {
@@ -56,6 +57,6 @@ export function useCommandLine(
 
       return result;
     },
-    [currentNodeId, navigateToNode, sendMessage, queryClient],
+    [currentNodeId, navigateToNode, sendMessage, queryClient, actor],
   );
 }
