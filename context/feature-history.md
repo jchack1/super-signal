@@ -88,6 +88,14 @@ Closed the one real gap identified when auditing "are basic commands done": `mv`
 - **No permission check** — kept consistent with `mv`/`cp`/`create`'s existing (documented) gap rather than special-casing `rename` the way `rm` was; see the open items already logged under slice 7 and in `roadmap.md`.
 - Verified: `typecheck`, `lint`, `build`, and `pnpm test` (new parse cases for `rename`; execute cases for `rename`, `mv`-as-rename, and `mv`-move-and-rename, plus a check that a plain move leaves `renamedNodeId` unset) all green.
 
+### 2026-08-06 — Phase 1 (slice 9): Drag-to-reorder in the folder view
+
+- **`positionBetween` (`lib/tree-position.ts`)** — the fractional-index "midpoint" function `appendPosition`'s comment had deferred: given two neighboring siblings' positions (or `undefined` for the start/end of the list), returns a new position that sorts strictly between them, by walking both strings one base-36 digit at a time and inserting the halfway digit where they first diverge. This is what makes inserting *in the middle* of an ordered list possible, not just appending at the end.
+- **`FolderView` rows are now draggable.** Native HTML5 drag-and-drop (no new dependency) — dragging a row over another shows a teal line above/below it depending on which half of the row the cursor is over, and dropping computes the new position from the drop target's current neighbors via `positionBetween`. The dragged row dims while in flight.
+- **`useReorderNode` hook** — same optimistic-update shape as `useSendMessage`: re-sorts the cached `['children', parentId]` list instantly, rolls back on error, reconciles on settle.
+- **Scope:** same-parent reordering only, in the center-pane folder view. The tree sidebar isn't drag-reorderable yet (nested/recursive drop targets are a bigger chunk of scope, deferred). No permission check — consistent with the existing (flagged) gap on `mv`/`cp`/`create`/`rename`.
+- Verified: `typecheck`, `lint`, `build`, and `pnpm test` (7 new `positionBetween` tests) all green, plus an end-to-end Playwright drag against the running dev server confirming the reorder actually persists in the data layer (not just a visual reshuffle) with no console errors.
+
 ### 2026-08-05 — Fix: stale result blocked live suggestions after running a command
 
 Bug, caught while testing `rename`/`rm` interactively: once any command produced a result (an error, an `rm` confirmation, an `ls` listing…), it stayed pinned on screen — `onChange` never cleared it — so live suggestions (slice 6) couldn't come back for the *next* thing typed until Escape was pressed first. It read as "the hint disappeared."

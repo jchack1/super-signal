@@ -35,8 +35,8 @@ The distinctive, demo-able product, built entirely against the mock data layer. 
 - [x] Node routing — stable ID URLs (`/n/:nodeId`), path derived for display
 - [x] Folder view — list children, ordered by `position` (center pane; click a row to `cd` in)
 - [x] Create / rename / move / delete a Node (against mock) — **create (`create`/`mkdir`), rename (`rename`, and `mv` now doubles as rename per Linux convention), move (`mv`), copy (`cp`), and delete (`rm`, with confirmation)** all landed via the command line
-- [ ] Drag-to-reorder (fractional `position`)
-- [ ] Context menus (right-click) via Radix/shadcn
+- [x] Drag-to-reorder (fractional `position`)
+- [ ] Context menus (right-click) via Radix/shadcn — mouse-driven access to the mutating actions (`rename`/`mv`/`cp`/`rm`/`create`) already built as command-line verbs, so the command line stays powerful but not mandatory (per the design principle in [project-overview.md](project-overview.md))
 - [x] Chat channel view — read message history from mock
 - [x] Post a message — with optimistic update
 - [~] Permission-aware UI — view/read/write gating driven by `PermissionService`; `rm` is the first command wired to a real check (`manage`, see [feature-history.md](feature-history.md) 2026-08-05 slice 7) — `mv`/`cp`/`create` still perform no permission check at all, see Open questions
