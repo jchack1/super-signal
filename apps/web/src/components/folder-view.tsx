@@ -6,6 +6,8 @@ import { useNavigateToNode } from '../hooks/use-navigate-to-node';
 import { useReorderNode } from '../hooks/use-reorder-node';
 import { positionBetween } from '../lib/tree-position';
 import { isContainer, nodeGlyph } from '../lib/node-display';
+import { NodeContextMenu } from './node-context-menu';
+import { RenameInput } from './rename-input';
 
 // Which half of a row a drag is hovering over — determines whether the dragged
 // node lands before or after that row once dropped.
@@ -22,6 +24,9 @@ export function FolderView({ node }: { node: FolderNode | ServerNode }) {
 
   const [draggedId, setDraggedId] = useState<NodeId | null>(null);
   const [dropTarget, setDropTarget] = useState<{ id: NodeId; edge: DropEdge } | null>(null);
+  // Only one row can be mid-rename at a time, so a single id (rather than
+  // per-row state) is enough to track it here.
+  const [renamingId, setRenamingId] = useState<NodeId | null>(null);
 
   // Computes a new position for the dragged node from its drop target's current
   // neighbors (excluding the dragged node itself, so dropping it right back
@@ -64,53 +69,69 @@ export function FolderView({ node }: { node: FolderNode | ServerNode }) {
         {isLoading ? (
           <p className="px-4 py-3 text-sm text-muted-foreground">Loading…</p>
         ) : children && children.length > 0 ? (
-          children.map((child) => (
-            <div
-              key={child.id}
-              draggable
-              onDragStart={(event) => {
-                // Firefox requires data on the drag event to start a native
-                // HTML5 drag at all; the value itself is never read back
-                // (the drop target is tracked in React state instead).
-                event.dataTransfer.setData('text/plain', child.id);
-                setDraggedId(child.id);
-              }}
-              onDragOver={(event) => {
-                event.preventDefault();
-                const rect = event.currentTarget.getBoundingClientRect();
-                const edge: DropEdge = event.clientY - rect.top < rect.height / 2 ? 'before' : 'after';
-                setDropTarget({ id: child.id, edge });
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                handleDrop(child);
-              }}
-              onDragEnd={() => {
-                setDraggedId(null);
-                setDropTarget(null);
-              }}
-              className={cn(
-                'border-y-2 border-transparent',
-                dropTarget && dropTarget.id === child.id && dropTarget.edge === 'before' && 'border-t-primary',
-                dropTarget && dropTarget.id === child.id && dropTarget.edge === 'after' && 'border-b-primary',
-              )}
-            >
-              <button
-                type="button"
-                onClick={() => navigateToNode(child.id)}
+          children.map((child) => {
+            const renaming = renamingId === child.id;
+            return (
+              <div
+                key={child.id}
+                draggable={!renaming}
+                onDragStart={(event) => {
+                  // Firefox requires data on the drag event to start a native
+                  // HTML5 drag at all; the value itself is never read back
+                  // (the drop target is tracked in React state instead).
+                  event.dataTransfer.setData('text/plain', child.id);
+                  setDraggedId(child.id);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const edge: DropEdge = event.clientY - rect.top < rect.height / 2 ? 'before' : 'after';
+                  setDropTarget({ id: child.id, edge });
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  handleDrop(child);
+                }}
+                onDragEnd={() => {
+                  setDraggedId(null);
+                  setDropTarget(null);
+                }}
                 className={cn(
-                  'flex w-full cursor-grab items-center gap-2.5 px-4 py-1.5 text-left font-mono text-[13px] text-foreground hover:bg-primary/10 active:cursor-grabbing',
-                  draggedId === child.id && 'opacity-40',
+                  'border-y-2 border-transparent',
+                  dropTarget && dropTarget.id === child.id && dropTarget.edge === 'before' && 'border-t-primary',
+                  dropTarget && dropTarget.id === child.id && dropTarget.edge === 'after' && 'border-b-primary',
                 )}
               >
-                <span className="w-4 text-center opacity-85">{nodeGlyph(child.type)}</span>
-                <span className="truncate">{child.name}</span>
-                <span className="ml-auto pl-3 text-[11px] text-muted-foreground/70">
-                  {isContainer(child) ? child.type : child.type.replace('-', ' ')}
-                </span>
-              </button>
-            </div>
-          ))
+                <NodeContextMenu node={child} onRenameRequest={() => setRenamingId(child.id)}>
+                  {renaming ? (
+                    <div className="flex items-center gap-2.5 px-4 py-1.5">
+                      <span className="w-4 text-center opacity-85">{nodeGlyph(child.type)}</span>
+                      <RenameInput
+                        node={child}
+                        onDone={() => setRenamingId(null)}
+                        className="px-1 py-0 text-[13px]"
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => navigateToNode(child.id)}
+                      className={cn(
+                        'flex w-full cursor-grab items-center gap-2.5 px-4 py-1.5 text-left font-mono text-[13px] text-foreground hover:bg-primary/10 active:cursor-grabbing',
+                        draggedId === child.id && 'opacity-40',
+                      )}
+                    >
+                      <span className="w-4 text-center opacity-85">{nodeGlyph(child.type)}</span>
+                      <span className="truncate">{child.name}</span>
+                      <span className="ml-auto pl-3 text-[11px] text-muted-foreground/70">
+                        {isContainer(child) ? child.type : child.type.replace('-', ' ')}
+                      </span>
+                    </button>
+                  )}
+                </NodeContextMenu>
+              </div>
+            );
+          })
         ) : (
           <p className="px-4 py-3 text-sm text-muted-foreground">This folder is empty.</p>
         )}
