@@ -1,23 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { asAvatarId, type Actor } from '@super-signal/core';
+import { asAvatarId, asNodeId, type Actor } from '@super-signal/core';
 import {
   createMockRepositories,
   NODE_ARCHIVE,
   NODE_FRONTEND,
   NODE_GENERAL,
+  NODE_MODS,
   NODE_OLD_GENERAL,
   NODE_PROJECTS,
   NODE_SERVER,
+  ROLE_MODERATORS,
   USER_ALICE,
   USER_BOB,
+  USER_CAROL,
 } from '@super-signal/core/adapters/mock';
 import { PermissionService } from '@super-signal/core/services';
 import { executeCommand } from './execute';
 
 // bob is a plain member (owns nothing, but has an explicit `manage` grant on
-// NODE_PROJECTS in the seed); alice owns everything else in the seed tree.
+// NODE_PROJECTS in the seed); alice owns everything else in the seed tree;
+// carol is a moderator (can see/use the private `mods-only` channel).
 const bob: Actor = { userId: USER_BOB, avatarId: asAvatarId('avatar-bob'), roleIds: [] };
 const alice: Actor = { userId: USER_ALICE, avatarId: asAvatarId('avatar-alice'), roleIds: [] };
+const carol: Actor = {
+  userId: USER_CAROL,
+  avatarId: asAvatarId('avatar-carol'),
+  roleIds: [ROLE_MODERATORS],
+};
 
 function ctx(currentNodeId = NODE_SERVER, actor: Actor = bob) {
   const { nodes } = createMockRepositories();
@@ -25,11 +34,20 @@ function ctx(currentNodeId = NODE_SERVER, actor: Actor = bob) {
 }
 
 describe('executeCommand', () => {
-  it('ls lists the children of the current directory', async () => {
+  it('ls lists the children of the current directory, hiding what the actor cannot view', async () => {
     const result = await executeCommand({ kind: 'ls' }, ctx(NODE_SERVER));
     expect(result.kind).toBe('listing');
     if (result.kind !== 'listing') return;
-    expect(result.nodes.map((n) => n.name)).toEqual(['general', 'mods-only', 'projects']);
+    // "mods-only" is excluded for bob (a plain member, no roles) — it's
+    // private and breaks inheritance, so he can't even view it.
+    expect(result.nodes.map((n) => n.name)).toEqual(['general', 'projects']);
+  });
+
+  it('ls includes a private node for an actor who can view it (a moderator)', async () => {
+    const result = await executeCommand({ kind: 'ls' }, ctx(NODE_SERVER, carol));
+    expect(result.kind).toBe('listing');
+    if (result.kind !== 'listing') return;
+    expect(result.nodes.map((n) => n.name)).toContain('mods-only');
   });
 
   it('find matches nodes by name across the whole tree', async () => {
@@ -44,6 +62,20 @@ describe('executeCommand', () => {
   it('find returns no matches when nothing fits', async () => {
     const result = await executeCommand({ kind: 'find', query: 'zzz' }, ctx());
     expect(result.kind === 'matches' && result.matches).toHaveLength(0);
+  });
+
+  it('find hides a private node (and would hide its subtree) from an actor who cannot view it', async () => {
+    const asBob = await executeCommand({ kind: 'find', query: 'mods' }, ctx(NODE_SERVER, bob));
+    expect(asBob.kind === 'matches' && asBob.matches).toHaveLength(0);
+
+    const asCarol = await executeCommand({ kind: 'find', query: 'mods' }, ctx(NODE_SERVER, carol));
+    expect(asCarol.kind === 'matches' && asCarol.matches.map((m) => m.node.id)).toEqual([NODE_MODS]);
+  });
+
+  it('cd treats a node the actor cannot view as not found, not permission-denied', async () => {
+    const result = await executeCommand({ kind: 'cd', path: 'mods-only' }, ctx(NODE_SERVER, bob));
+    expect(result.kind).toBe('error');
+    expect(result.kind === 'error' && result.message).toContain('not found');
   });
 
   it('mv moves a node into a folder and reports both affected parents', async () => {
@@ -94,6 +126,64 @@ describe('executeCommand', () => {
     expect(renamed?.parentId).toBe(NODE_PROJECTS); // stayed in the same folder
   });
 
+  it('mv refuses when the actor lacks manage on the source', async () => {
+    const result = await executeCommand(
+      { kind: 'mv', src: 'general', dest: 'projects' },
+      ctx(NODE_SERVER, bob),
+    );
+    expect(result.kind).toBe('error');
+  });
+
+  it('mv refuses a cross-folder move when the actor lacks write on the destination', async () => {
+    // bob manages "frontend" (inherited from his grant on "projects"), but has
+    // no write on the root — moving it there should be refused.
+    const result = await executeCommand(
+      { kind: 'mv', src: 'projects/frontend', dest: '/' },
+      ctx(NODE_SERVER, bob),
+    );
+    expect(result.kind).toBe('error');
+  });
+
+  it('mv-as-rename only requires manage on the source, not write on the parent', async () => {
+    // A synthetic scenario the seed doesn't cover: a folder bob has no grant
+    // on at all, containing a node he has a personal `manage` grant on.
+    const c = ctx(NODE_SERVER, bob);
+    const parentId = asNodeId('test-parent');
+    const childId = asNodeId('test-child');
+    const now = new Date().toISOString();
+    await c.repo.create({
+      id: parentId,
+      type: 'folder',
+      name: 'walled-off',
+      parentId: NODE_SERVER,
+      ownerId: USER_ALICE,
+      position: 'zz',
+      inherit: true,
+      acl: [], // no grant to bob — only the server's inherited everyone:[view,read]
+      createdAt: now,
+      updatedAt: now,
+    });
+    await c.repo.create({
+      id: childId,
+      type: 'chat-channel',
+      name: 'old-name',
+      parentId,
+      ownerId: USER_ALICE,
+      position: 'a0',
+      inherit: true,
+      acl: [{ principal: { kind: 'user', id: USER_BOB }, allow: ['manage'] }],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const result = await executeCommand(
+      { kind: 'mv', src: '/walled-off/old-name', dest: '/walled-off/new-name' },
+      c,
+    );
+    expect(result.kind).toBe('info');
+    expect((await c.repo.getNode(childId))?.name).toBe('new-name');
+  });
+
   it('mv moves and renames in one step when the destination is a new name in another folder', async () => {
     const c = ctx(NODE_SERVER);
     const result = await executeCommand(
@@ -112,8 +202,25 @@ describe('executeCommand', () => {
     expect(moved?.parentId).toBe(NODE_ARCHIVE);
   });
 
+  it('cp refuses when the actor lacks read on the source', async () => {
+    const result = await executeCommand(
+      { kind: 'cp', src: 'mods-only', dest: 'projects' },
+      ctx(NODE_SERVER, bob),
+    );
+    expect(result.kind).toBe('error');
+  });
+
+  it('cp refuses when the actor lacks write on the destination', async () => {
+    // bob can read "general" (open to everyone) but has no write on the root.
+    const result = await executeCommand(
+      { kind: 'cp', src: 'general', dest: '/' },
+      ctx(NODE_SERVER, bob),
+    );
+    expect(result.kind).toBe('error');
+  });
+
   it('cp deep-copies a subtree with fresh ids and remapped parents', async () => {
-    const c = ctx(NODE_SERVER);
+    const c = ctx(NODE_SERVER, alice); // alice owns the root; bob has no write there
     const result = await executeCommand({ kind: 'cp', src: 'projects/archive', dest: '/' }, c);
     expect(result.kind).toBe('info');
 
@@ -142,6 +249,15 @@ describe('executeCommand', () => {
     expect(created?.parentId).toBe(NODE_PROJECTS);
   });
 
+  it('create refuses when the actor lacks write on the parent', async () => {
+    // bob has no write on the root (only the inherited everyone:[view,read]).
+    const result = await executeCommand(
+      { kind: 'create', type: 'folder', name: 'nope' },
+      ctx(NODE_SERVER, bob),
+    );
+    expect(result.kind).toBe('error');
+  });
+
   it('create refuses to create inside a non-container node', async () => {
     const result = await executeCommand(
       { kind: 'create', type: 'folder', name: 'nope' },
@@ -161,6 +277,15 @@ describe('executeCommand', () => {
     const renamed = await c.repo.getNode(NODE_FRONTEND);
     expect(renamed?.name).toBe('frontend-v2');
     expect(renamed?.parentId).toBe(NODE_PROJECTS);
+  });
+
+  it('rename refuses when the actor lacks manage on the target', async () => {
+    // "general" is alice-owned with no grant to bob beyond read/write.
+    const result = await executeCommand(
+      { kind: 'rename', path: 'general', newName: 'general-2' },
+      ctx(NODE_SERVER, bob),
+    );
+    expect(result.kind).toBe('error');
   });
 
   it('rename to the same name is a no-op and does not flag a rename', async () => {
@@ -249,5 +374,31 @@ describe('executeCommand', () => {
 
     const onFolder = await executeCommand({ kind: 'message', body: '@bob hi' }, ctx(NODE_PROJECTS));
     expect(onFolder.kind).toBe('error');
+  });
+
+  it('message refuses when the actor lacks write on the channel (a read-only announcements case)', async () => {
+    // CONFERS keeps read/write independent specifically to express read-only
+    // announcement channels (see permission-service.ts) — this is that case.
+    const c = ctx(NODE_SERVER, bob);
+    const announcementsId = asNodeId('test-announcements');
+    const now = new Date().toISOString();
+    await c.repo.create({
+      id: announcementsId,
+      type: 'chat-channel',
+      name: 'announcements',
+      parentId: NODE_SERVER,
+      ownerId: USER_ALICE,
+      position: 'zz',
+      inherit: true,
+      acl: [{ principal: { kind: 'everyone' }, allow: ['read'] }],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const result = await executeCommand(
+      { kind: 'message', body: '@bob hi' },
+      { ...c, currentNodeId: announcementsId },
+    );
+    expect(result.kind).toBe('error');
   });
 });

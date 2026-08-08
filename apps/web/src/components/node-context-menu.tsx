@@ -19,6 +19,7 @@ import {
   ContextMenuTrigger,
 } from '@super-signal/ui/components/context-menu';
 import { useNodeActions } from '../hooks/use-node-actions';
+import { useNodePermissions } from '../hooks/use-node-permissions';
 import type { Command, CreatableNodeType } from '../lib/command-line/types';
 import { isContainer } from '../lib/node-display';
 
@@ -47,6 +48,12 @@ type DialogState =
  * the row (TreeNode / the folder-view row) uses to swap its own display for
  * an inline `RenameInput` — this component only owns the parts that don't
  * depend on the row's layout (the menu itself, and Delete's confirmation).
+ *
+ * Each item is only offered if the actor can actually do it (Rename/Delete
+ * need `manage`, New needs `write`) — `execute.ts`'s own checks remain the
+ * real gate (this is UX politeness, the same relationship `rm`'s existing
+ * check already has to the rest of the app). If nothing applies, no menu
+ * shows at all rather than popping up empty.
  */
 export function NodeContextMenu({
   node,
@@ -63,7 +70,11 @@ export function NodeContextMenu({
   children: ReactNode;
 }) {
   const actions = useNodeActions();
+  const { data: perms } = useNodePermissions(node.id);
   const [dialog, setDialog] = useState<DialogState | null>(null);
+
+  const canManage = perms?.has('manage') ?? false;
+  const canCreate = isContainer(node) && (perms?.has('write') ?? false);
 
   const handleDelete = async () => {
     const result = await actions.remove(node);
@@ -86,30 +97,40 @@ export function NodeContextMenu({
     else onCreated?.();
   };
 
+  const hasAnyAction = canManage || canCreate;
+
   return (
     <>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem onSelect={onRenameRequest}>Rename</ContextMenuItem>
-          {isContainer(node) && (
-            <ContextMenuSub>
-              <ContextMenuSubTrigger>New</ContextMenuSubTrigger>
-              <ContextMenuSubContent>
-                {NEW_NODE_TYPES.map(({ type, label, defaultName }) => (
-                  <ContextMenuItem key={type} onSelect={() => void handleCreate(type, defaultName)}>
-                    {label}
-                  </ContextMenuItem>
-                ))}
-              </ContextMenuSubContent>
-            </ContextMenuSub>
-          )}
-          <ContextMenuSeparator />
-          <ContextMenuItem variant="destructive" onSelect={() => void handleDelete()}>
-            Delete
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+      {hasAnyAction ? (
+        <ContextMenu>
+          <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+          <ContextMenuContent>
+            {canManage && <ContextMenuItem onSelect={onRenameRequest}>Rename</ContextMenuItem>}
+            {canCreate && (
+              <ContextMenuSub>
+                <ContextMenuSubTrigger>New</ContextMenuSubTrigger>
+                <ContextMenuSubContent>
+                  {NEW_NODE_TYPES.map(({ type, label, defaultName }) => (
+                    <ContextMenuItem key={type} onSelect={() => void handleCreate(type, defaultName)}>
+                      {label}
+                    </ContextMenuItem>
+                  ))}
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+            )}
+            {canManage && (
+              <>
+                <ContextMenuSeparator />
+                <ContextMenuItem variant="destructive" onSelect={() => void handleDelete()}>
+                  Delete
+                </ContextMenuItem>
+              </>
+            )}
+          </ContextMenuContent>
+        </ContextMenu>
+      ) : (
+        children
+      )}
 
       <AlertDialog open={dialog !== null} onOpenChange={(open) => !open && setDialog(null)}>
         <AlertDialogContent>

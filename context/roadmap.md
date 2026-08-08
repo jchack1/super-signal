@@ -4,7 +4,7 @@ Forward-looking build plan for Super Signal. Grounded in [project-overview.md](p
 
 **Legend:** `[ ]` not started · `[~]` in progress · `[x]` done · 🔒 blocked/waiting
 
-**Current focus:** Phase 1 — Core filesystem UI. (Phase 0 complete.)
+**Current focus:** Phase 2 — Real backend (Supabase). (Phase 0 and Phase 1 complete.)
 
 ---
 
@@ -25,7 +25,7 @@ Get the monorepo, shared config, and the `packages/core` skeleton in place so ev
 - [x] ESLint flat config at root (TypeScript pinned to stable 5.x — TS 7 broke the ESLint toolchain)
 - [~] Deploy to Netlify — deferred until there is a UI (user's call)
 
-## Phase 1 — Core filesystem UI (the "Part 1 = UI only" milestone)
+## Phase 1 — Core filesystem UI (the "Part 1 = UI only" milestone) — complete
 
 The distinctive, demo-able product, built entirely against the mock data layer. Nothing here touches a real backend.
 
@@ -39,7 +39,7 @@ The distinctive, demo-able product, built entirely against the mock data layer. 
 - [x] Context menus (right-click) via Radix/shadcn — mouse-driven access to the mutating actions already built as command-line verbs (rename/create/delete; `mv`/`cp` deliberately excluded — they need a destination picker that doesn't exist yet), so the command line stays powerful but not mandatory (per the design principle in [project-overview.md](project-overview.md))
 - [x] Chat channel view — read message history from mock
 - [x] Post a message — with optimistic update
-- [~] Permission-aware UI — view/read/write gating driven by `PermissionService`; `rm` is the first command wired to a real check (`manage`, see [feature-history.md](feature-history.md) 2026-08-05 slice 7) — `mv`/`cp`/`create` still perform no permission check at all, see Open questions
+- [x] Permission-aware UI — view/read/write gating driven by `PermissionService`, applied consistently across every mutating command (not just `rm`), plus Discord-style visibility filtering (a node the actor can't `view` doesn't appear in the tree, folder view, `find`, or direct navigation) and context-menu gating (see [feature-history.md](feature-history.md) 2026-08-07 slice 12)
 - [x] Identity — pick / switch Avatar (mock), simple presence indicator
 - [x] Command line — **one unified bottom prompt**, sigil-disambiguated: `cd` / `ls` / `find` / `mv` / `cp` / `create` / `mkdir` / `rename` / `rm` commands + `@`/`#` messaging in the same input, plus live command suggestions while typing (reverted the earlier two-box split; see [feature-history.md](feature-history.md) 2026-07-21). This closes out the basic command set the original spec implies.
 
@@ -80,6 +80,7 @@ Swap the mock adapter for Supabase behind the repository interfaces. Ideally the
 - Abuse / Sybil resistance for free anonymous accounts — since email/phone are *optional* (no mandatory phone-number gate like Signal), decide the mechanism(s): proof-of-work, invite trees, rate limits, per-community verification levels, moderation tooling. Decided so far: recovery phrase default + optional email/phone on the User (see [project-overview.md](project-overview.md) → Account recovery)
 - Which file-type Nodes matter first (Phase 3)
 - Unified command line — reverted the "two boxes, two jobs" split to the spec's single sigil-disambiguated prompt (default = command; `@`/`#` = message). Open: whether to add a QoL "plain text = message when inside a channel" so routine chat doesn't need a sigil — being flagged with the spec author.
-- Permission checks are not yet applied consistently across mutating commands. `rm` checks `manage` on its target (see [feature-history.md](feature-history.md) 2026-08-05 slice 7); `mv`, `cp`, `create`, and `rename` perform no permission check at all — anyone can currently move, copy, create, or rename anywhere. Needs a deliberate pass once the permission-aware-UI item in Phase 1 is picked up, rather than bolting a check onto each command ad hoc.
-- Recursive delete (`rm -r`) only checks `manage` on the top-level target, not on each node it deletes underneath. A node deeper in the subtree that breaks inheritance and excludes the actor could still be swept away by a recursive delete of an ancestor the actor can manage. Worth deciding whether operations that touch multiple nodes (recursive delete, and eventually recursive permission edits) should require the *intersection* of permissions across every node they touch, not just the top-level target.
+- ~~Permission checks are not yet applied consistently across mutating commands~~ — resolved 2026-08-07: `mv`/`cp`/`create`/`rename`/message-posting now all check `PermissionService`, matching `rm`'s existing pattern (see [feature-history.md](feature-history.md) slice 12).
+- Recursive delete (`rm -r`) only checks `manage` on the top-level target, not on each node it deletes underneath. A node deeper in the subtree that breaks inheritance and excludes the actor could still be swept away by a recursive delete of an ancestor the actor can manage. Worth deciding whether operations that touch multiple nodes (recursive delete, and eventually recursive permission edits) should require the *intersection* of permissions across every node they touch, not just the top-level target. Deliberately left as-is during the 2026-08-07 permission-aware-UI pass (user's call) rather than folded in ad hoc.
+- No in-app way to act as a different user (only avatar-switching within the single fixed mock user, bob, exists). Moderator-gated content (the private `mods-only` channel) is only verified in unit tests, not demoable live in the running app — real multi-user identity is Phase 2's anonymous-auth work.
 - No undo / trash window for `rm` — a confirmed delete is immediate and permanent. Decide whether a trash/soft-delete period is worth adding before this reaches real users, or whether the confirmation step is considered sufficient.

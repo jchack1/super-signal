@@ -3,6 +3,7 @@ import {
   createMockRepositories,
   NODE_GENERAL,
   NODE_MODS,
+  NODE_PROJECTS,
   ROLE_MODERATORS,
   USER_ALICE,
   USER_BOB,
@@ -52,5 +53,29 @@ describe('PermissionService', () => {
       roleIds: [],
     };
     expect(await service.can(alice, NODE_MODS, 'manage')).toBe(true);
+  });
+
+  describe('filterViewable', () => {
+    it('drops nodes the actor cannot view, keeps the rest', async () => {
+      const { nodes } = createMockRepositories();
+      const service = new PermissionService(nodes);
+      const general = await nodes.getNode(NODE_GENERAL);
+      const mods = await nodes.getNode(NODE_MODS);
+      const projects = await nodes.getNode(NODE_PROJECTS);
+      if (!general || !mods || !projects) throw new Error('seed nodes missing');
+
+      const result = await service.filterViewable(bob, [general, mods, projects]);
+      expect(result.map((n) => n.id)).toEqual([NODE_GENERAL, NODE_PROJECTS]);
+    });
+
+    it('includes a node the actor can view because of a role grant', async () => {
+      const { nodes } = createMockRepositories();
+      const service = new PermissionService(nodes);
+      const mods = await nodes.getNode(NODE_MODS);
+      if (!mods) throw new Error('seed node missing');
+
+      const result = await service.filterViewable(carol, [mods]);
+      expect(result.map((n) => n.id)).toEqual([NODE_MODS]);
+    });
   });
 });

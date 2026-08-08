@@ -94,4 +94,17 @@ export class PermissionService {
     const granted = await this.effectivePermissions(actor, nodeId);
     return granted.has(permission);
   }
+
+  /**
+   * Narrows a list down to the nodes the actor can `view` — the primitive
+   * behind "hide what you can't see" (Discord-style: a channel you lack
+   * access to doesn't appear in a listing at all, rather than showing
+   * greyed-out). One independent `can()` check per node; fine for the mock's
+   * small trees, but a real backend would push this into an RLS-filtered
+   * query instead of N round trips.
+   */
+  async filterViewable(actor: Actor, nodes: Node[]): Promise<Node[]> {
+    const visible = await Promise.all(nodes.map((node) => this.can(actor, node.id, 'view')));
+    return nodes.filter((_, index) => visible[index]);
+  }
 }

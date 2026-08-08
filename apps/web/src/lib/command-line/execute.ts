@@ -1,4 +1,5 @@
-import { asNodeId, type Node, type NodeId, type UserId } from '@super-signal/core';
+import { asNodeId, type Actor, type Node, type NodeId, type UserId } from '@super-signal/core';
+import type { PermissionService } from '@super-signal/core/services';
 import { isContainer } from '../node-display';
 import { appendPosition } from '../tree-position';
 import { resolvePath } from './resolve-path';
@@ -54,9 +55,14 @@ async function displayPath(reader: TreeReader, node: Node): Promise<string> {
 
 // Walks the whole tree from its root, collecting nodes whose name contains the
 // query (case-insensitive). Client-side for now; at scale `find` becomes a
-// repository/SQL search rather than a full walk.
+// repository/SQL search rather than a full walk. Only descends into children
+// the actor can `view` — a hidden folder's entire subtree stops being
+// searchable, not just the folder itself (Discord-style: pretend it isn't
+// there, rather than showing it as a locked result).
 async function searchTree(
   reader: TreeReader,
+  permissions: PermissionService,
+  actor: Actor,
   currentNodeId: NodeId,
   query: string,
 ): Promise<NodeMatch[]> {
@@ -71,7 +77,9 @@ async function searchTree(
   async function walk(node: Node, prefix: string): Promise<void> {
     const path = `${prefix}/${node.name}`;
     if (node.name.toLowerCase().includes(lowered)) matches.push({ node, path });
-    for (const child of await reader.getChildren(node.id)) {
+    const children = await reader.getChildren(node.id);
+    const viewableChildren = await permissions.filterViewable(actor, children);
+    for (const child of viewableChildren) {
       await walk(child, path);
     }
   }
@@ -204,6 +212,12 @@ export async function executeCommand(
     case 'cd': {
       const result = await resolvePath(command.path, repo, currentNodeId);
       if (!result.ok) return error(result.error);
+      // A node the actor can't `view` reads as "doesn't exist" — deliberately
+      // indistinguishable from a genuinely missing path, so a hidden node's
+      // existence is never disclosed.
+      if (!(await permissions.can(actor, result.node.id, 'view'))) {
+        return error(`path not found: ${command.path}`);
+      }
       return { kind: 'navigate', nodeId: result.node.id };
     }
 
@@ -212,24 +226,31 @@ export async function executeCommand(
       if (command.path) {
         const result = await resolvePath(command.path, repo, currentNodeId);
         if (!result.ok) return error(result.error);
+        if (!(await permissions.can(actor, result.node.id, 'view'))) {
+          return error(`path not found: ${command.path}`);
+        }
         base = result.node;
       } else {
         base = await repo.getNode(currentNodeId);
       }
       if (!base) return error('nothing to list here');
-      const nodes = await repo.getChildren(base.id);
+      const children = await repo.getChildren(base.id);
+      const nodes = await permissions.filterViewable(actor, children);
       const dirPath = await displayPath(repo, base);
       return { kind: 'listing', dirPath, nodes };
     }
 
     case 'find': {
-      const matches = await searchTree(repo, currentNodeId, command.query);
+      const matches = await searchTree(repo, permissions, actor, currentNodeId, command.query);
       return { kind: 'matches', query: command.query, matches };
     }
 
     case 'mv': {
       const src = await resolvePath(command.src, repo, currentNodeId);
       if (!src.ok) return error(`mv: ${src.error}`);
+      if (!(await permissions.can(actor, src.node.id, 'manage'))) {
+        return error(`mv: you don't have permission to move ${src.node.name}`);
+      }
       const dest = await resolveMoveDestination(command.dest, src.node.name, repo, currentNodeId);
       if (!dest.ok) return error(`mv: ${dest.error}`);
       if (dest.parent.id === src.node.id) return error(`mv: can't move ${src.node.name} into itself`);
@@ -241,6 +262,13 @@ export async function executeCommand(
       const didRename = dest.name !== src.node.name;
       if (!didMove && !didRename) {
         return { kind: 'info', message: `${src.node.name} is already there`, invalidateParentIds: [] };
+      }
+      // Only a genuine cross-folder move needs `write` on the destination —
+      // a pure rename-in-place (dest resolves to the same parent) requires
+      // nothing beyond the `manage` on `src` already checked above, matching
+      // the dedicated `rename` command's own requirement exactly.
+      if (didMove && !(await permissions.can(actor, dest.parent.id, 'write'))) {
+        return error(`mv: you don't have permission to move things into ${dest.parent.name}`);
       }
 
       if (didMove) {
@@ -270,9 +298,15 @@ export async function executeCommand(
     case 'cp': {
       const src = await resolvePath(command.src, repo, currentNodeId);
       if (!src.ok) return error(`cp: ${src.error}`);
+      if (!(await permissions.can(actor, src.node.id, 'read'))) {
+        return error(`cp: you don't have permission to copy ${src.node.name}`);
+      }
       const dest = await resolvePath(command.dest, repo, currentNodeId);
       if (!dest.ok) return error(`cp: ${dest.error}`);
       if (!isContainer(dest.node)) return error(`cp: ${dest.node.name} is not a folder`);
+      if (!(await permissions.can(actor, dest.node.id, 'write'))) {
+        return error(`cp: you don't have permission to copy things into ${dest.node.name}`);
+      }
       if (dest.node.id === src.node.id || (await isWithin(repo, dest.node.id, src.node.id))) {
         return error(`cp: can't copy ${src.node.name} into itself`);
       }
@@ -286,6 +320,9 @@ export async function executeCommand(
       if (!current) return error('current location no longer exists');
       if (!isContainer(current)) {
         return error(`create: can't create things inside ${current.name} — cd into a folder or server first`);
+      }
+      if (!(await permissions.can(actor, current.id, 'write'))) {
+        return error(`create: you don't have permission to create things in ${current.name}`);
       }
       const position = appendPosition(await repo.getChildren(current.id));
       const node = buildNode(command.type, command.name, current.id, position, actor.userId);
@@ -301,6 +338,9 @@ export async function executeCommand(
       const target = await resolvePath(command.path, repo, currentNodeId);
       if (!target.ok) return error(`rename: ${target.error}`);
       const node = target.node;
+      if (!(await permissions.can(actor, node.id, 'manage'))) {
+        return error(`rename: you don't have permission to rename ${node.name}`);
+      }
       if (command.newName === node.name) {
         return { kind: 'info', message: `${node.name} is already named that`, invalidateParentIds: [] };
       }
@@ -347,6 +387,9 @@ export async function executeCommand(
       const current = await repo.getNode(currentNodeId);
       if (!current || current.type !== 'chat-channel') {
         return error('No channel here to post to — cd into a chat channel first.');
+      }
+      if (!(await permissions.can(actor, current.id, 'write'))) {
+        return error("message: you don't have permission to post here");
       }
       return { kind: 'message', channelId: current.id, body: command.body };
     }
